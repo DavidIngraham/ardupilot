@@ -194,6 +194,7 @@ bool Copter::guided_set_destination(const Vector3f& destination)
 
     // no need to check return status because terrain data is not used
     wp_nav.set_wp_destination(destination, false);
+    gcs_send_text(MAV_SEVERITY_INFO, "Guided:New Destination Set (Vector)");
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
@@ -226,6 +227,8 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc)
         // failure is propagated to GCS with NAK
         return false;
     }
+
+    gcs_send_text(MAV_SEVERITY_INFO, "Guided:New Destination Set (Location Class)");
 
     // log target
     Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());

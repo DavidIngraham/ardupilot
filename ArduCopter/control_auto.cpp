@@ -698,9 +698,11 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
         if(!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
             set_auto_yaw_mode(AUTO_YAW_ROI);
+            gcs_send_text(MAV_SEVERITY_INFO, "ROI:New Yaw Target Set");
         }
         // send the command to the camera mount
         camera_mount.set_roi_target(roi_location);
+        gcs_send_text(MAV_SEVERITY_INFO, "ROI:New Gimbal Target Set");
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing
@@ -712,6 +714,7 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
         // if we have no camera mount aim the quad at the location
         roi_WP = pv_location_to_vector(roi_location);
         set_auto_yaw_mode(AUTO_YAW_ROI);
+        gcs_send_text(MAV_SEVERITY_INFO, "ROI:New Yaw Target Set (No Gimbal Present)");
 #endif  // MOUNT == ENABLED
     }
 }
