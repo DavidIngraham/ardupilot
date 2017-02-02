@@ -853,7 +853,8 @@ bool Copter::verify_yaw()
 
 // do_guided - start guided mode
 bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
-{
+{   
+    gcs_send_text(MAV_SEVERITY_INFO, "Why the fuck are we here");
     // only process guided waypoint if we are in guided mode
     if (control_mode != GUIDED && !(control_mode == AUTO && auto_mode == Auto_NavGuided)) {
         return false;
