@@ -1387,6 +1387,25 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+
+        case MAV_CMD_AIRFRAME_CONFIGURATION:
+            // Deploy or retract the landing gear
+            result = MAV_RESULT_FAILED;
+
+            // param 1: Landing gear ID (default: 0, -1 for all) (ignoring this)
+            // param 2: Landing gear position (Down: 0, Up: 1, NAN for no change)
+
+            if (plane.g2.landinggear_channel > 0) {
+                if (is_zero(packet.param2)) {
+                    plane.g2.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+                    result = MAV_RESULT_ACCEPTED;
+                } else if (is_equal(packet.param2, 1.0f)) {
+                    plane.g2.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+                    result = MAV_RESULT_ACCEPTED;
+                }
+            }
+            
+            break;
             
         default:
             result = handle_command_long_message(packet);

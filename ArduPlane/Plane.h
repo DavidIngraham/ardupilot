@@ -95,6 +95,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Landing/AP_Landing.h>
+#include <AP_LandingGear/AP_LandingGear.h>
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -1002,6 +1003,7 @@ private:
     void compass_cal_update();
     void barometer_accumulate(void);
     void update_optical_flow(void);
+    void update_landing_gear(void);
     void one_second_loop(void);
     void airspeed_ratio_update(void);
     void update_mount(void);

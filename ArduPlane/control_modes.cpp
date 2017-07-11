@@ -66,6 +66,14 @@ void Plane::read_control_switch()
     }
 #endif
     
+    if (g2.landinggear_channel > 0) {
+        if (hal.rcin->read(g2.landinggear_channel-1) >= 1700) {
+            g2.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+        } else {
+            g2.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+        }
+    }
+    
 #if HAVE_PX4_MIXER
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it

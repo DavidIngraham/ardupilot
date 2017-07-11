@@ -68,6 +68,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_receiver_rssi,     10,    100),
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
+    SCHED_TASK(update_landing_gear,    10,     75),
     SCHED_TASK(update_mount,           50,    100),
     SCHED_TASK(update_trigger,         50,    100),
     SCHED_TASK(log_perf_info,         0.2,    100),
@@ -1007,6 +1008,28 @@ void Plane::update_optical_flow(void)
     }
 }
 #endif
+
+void Plane::update_landing_gear(void)
+{
+    // If landing gear control is active, run update function.
+    if (g2.landinggear_channel > 0){
+
+        // last quadplane state, used to determine when a quad -> plane transition happens
+        static bool was_flying_vtol_auto = quadplane.in_vtol_auto();
+
+        // if we are landing as a plane or VTOL, deploy the landing gear 
+        if ((flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) || (control_mode == QLAND)){
+            g2.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+        }
+
+        // if we have transitioned from an auto vtol mode to auto plane mode, retract the landing gear 
+        if (was_flying_vtol_auto && control_mode == AUTO){
+            g2.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+        }
+
+        was_flying_vtol_auto = quadplane.in_vtol_auto();        
+    }
+}
 
 
 /*

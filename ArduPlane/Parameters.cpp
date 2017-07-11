@@ -1186,6 +1186,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
 
+    // @Group: LGR_
+    // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
+    AP_SUBGROUPINFO(landinggear, "LGR_", 12, ParametersG2, AP_LandingGear),
+
+    // @Param: LGR_CHAN
+    // @DisplayName: Landing Gear Deployment channel
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for manually retracting and deploying the landing gear. When this channel goes above 1700 the landing gear will be retracted
+    // @Range: 0 8
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LGR_CHAN", 13, ParametersG2, landinggear_channel, 0),
+
+
     AP_GROUPEND
 };
 

@@ -545,6 +545,9 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
+    // Landing gear retract support
+    AP_LandingGear landinggear;
+    AP_Int8 landinggear_channel;
 };
 
 extern const AP_Param::Info var_info[];
