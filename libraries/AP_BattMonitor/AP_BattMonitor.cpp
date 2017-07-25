@@ -124,7 +124,6 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_CAPACITY", 17, AP_BattMonitor, _pack_capacity[1], AP_BATT_CAPACITY_DEFAULT),
 
-
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     // @Param: 2_WATT_MAX
     // @DisplayName: Maximum allowed current
@@ -158,6 +157,75 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Values: 0:Raw Voltage, 1:Sag Compensated Voltage
     // @User: Advanced
     AP_GROUPINFO("_LOW_TYPE", 22, AP_BattMonitor, _low_voltage_source, BattMonitor_LowVoltageSource_Raw),
+
+
+#if AP_BATT_MONITOR_MAX_INSTANCES > 2
+    // @Param: 3_MONITOR
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell
+    // @User: Standard
+    AP_GROUPINFO("3_MONITOR", 23, AP_BattMonitor, _monitoring[2], BattMonitor_TYPE_NONE),
+
+    // @Param: 3_VOLT_PIN
+    // @DisplayName: Battery Voltage sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 100. On the Pixhawk, Pixracer and NAVIO boards it should be set to 2, Pixhawk2 Power2 is 13.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 13:Pixhawk2_PM2, 100:PX4-v1
+    // @User: Standard
+    AP_GROUPINFO("3_VOLT_PIN", 24, AP_BattMonitor, _volt_pin[2], AP_BATT_VOLT_PIN),
+
+    // @Param: 3_CURR_PIN
+    // @DisplayName: Battery Current sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. On the PX4-v1 it should be set to 101. On the Pixhawk, Pixracer and NAVIO boards it should be set to 3, Pixhawk2 Power2 is 14.
+    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 14:Pixhawk2_PM2, 101:PX4-v1
+    // @User: Standard
+    AP_GROUPINFO("3_CURR_PIN", 25, AP_BattMonitor, _curr_pin[2], AP_BATT_CURR_PIN),
+
+    // @Param: 3_VOLT_MULT
+    // @DisplayName: Voltage Multiplier
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the Pixhawk with the 3DR 4in1 ESC this should be 12.02. For the PX4 using the PX4IO power supply this should be set to 1.
+    // @User: Advanced
+    AP_GROUPINFO("3_VOLT_MULT", 26, AP_BattMonitor, _volt_multiplier[2], AP_BATT_VOLTDIVIDER_DEFAULT),
+
+    // @Param: 3_AMP_PERVOL
+    // @DisplayName: Amps per volt
+    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.
+    // @Units: A/V
+    // @User: Standard
+    AP_GROUPINFO("3_AMP_PERVOL", 27, AP_BattMonitor, _curr_amp_per_volt[2], AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
+
+    // @Param: 3_AMP_OFFSET
+    // @DisplayName: AMP offset
+    // @Description: Voltage offset at zero current on current sensor
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("3_AMP_OFFSET", 28, AP_BattMonitor, _curr_amp_offset[2], 0),
+
+    // @Param: 3_CAPACITY
+    // @DisplayName: Battery capacity
+    // @Description: Capacity of the battery in mAh when full
+    // @Units: mA.h
+    // @Increment: 50
+    // @User: Standard
+    AP_GROUPINFO("3_CAPACITY", 29, AP_BattMonitor, _pack_capacity[2], AP_BATT_CAPACITY_DEFAULT),
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: 3_WATT_MAX
+    // @DisplayName: Maximum allowed current
+    // @Description: If battery wattage (voltage * current) exceeds this value then the system will reduce max throttle (THR_MAX, TKOFF_THR_MAX and THR_MIN for reverse thrust) to satisfy this limit. This helps limit high current to low C rated batteries regardless of battery voltage. The max throttle will slowly grow back to THR_MAX (or TKOFF_THR_MAX ) and THR_MIN if demanding the current max and under the watt max. Use 0 to disable.
+    // @Units: A
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("3_WATT_MAX", 30, AP_BattMonitor, _watt_max[2], AP_BATT_MAX_WATT_DEFAULT),
+#endif
+
+    // @Param: 2_SERIAL_NUM
+    // @DisplayName: Battery serial number
+    // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1
+    // @User: Advanced
+    AP_GROUPINFO("3_SERIAL_NUM", 31, AP_BattMonitor, _serial_numbers[2], AP_BATT_SERIAL_NUMBER_DEFAULT),
+
+#endif // AP_BATT_MONITOR_MAX_INSTANCES > 2 
 
     AP_GROUPEND
 };
