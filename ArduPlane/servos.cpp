@@ -154,6 +154,42 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
     SRV_Channels::set_output_scaled(func2_out, out2);
 }
 
+/* 
+  mixer for guided parafoil output. This mixer uses the aileron controller 
+  output to control one servo for each brake line. Unlike Ailerons, brakes 
+  are only pulled on the side of the turn. During landing, both brakes are
+  pulled together for flare
+*/
+void Plane::parafoil_function_mixer(void)
+{
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_parafoilBrakeLeft) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_parafoilBrakeRight)) {
+        return;
+    }
+    /* 
+      Brake servos will always sit at their trim PWM in a when not being used for
+      a turn. This code assumes that servos are arranged such that a higher PWM
+      value pulls down on the brake.  
+      During a turn, the brake on the side of the turn will be pulled down. 
+      MIXING_GAIN is used to control the aggressiveness of the turns. 
+      TODO - Revisit whether mixing gain is best or if servo endpoints are more 
+      appropriate
+    */ 
+    float brake_left, brake_right;
+    float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    if (aileron < 0) { // Roll Left
+        brake_left  = constrain_float(-aileron * g.mixing_gain, 0, 4500);
+        brake_right = 0;
+    } else if (aileron > 0) { // Roll Right
+        brake_left  = 0;
+        brake_right =  constrain_float(aileron * g.mixing_gain, 0, 4500);
+    } else {
+        brake_left  = 0;
+        brake_right = 0;
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_parafoilBrakeLeft, brake_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_parafoilBrakeRight, brake_right);
+}
 
 /*
   setup flaperon output channels
@@ -661,6 +697,9 @@ void Plane::servos_output(void)
     
     // run vtail and elevon mixers
     servo_output_mixers();
+
+    // run parafoil output mixer
+    parafoil_function_mixer();
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == MANUAL) {
