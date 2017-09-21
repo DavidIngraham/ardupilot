@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PropertyList>
+
+  <!-- wing warping -->
+  <filter>
+   <type>gain</type>
+   <gain>-0.3</gain>
+   <input>/fdm/jsbsim/fcs/left-elevon-pos-norm</input>
+   <output>/fdm/jsbsim/systems/animation/left-aileron-deg</output>
+  </filter>
+
+  <filter>
+   <type>gain</type>
+   <gain>-0.3</gain>
+   <input>/fdm/jsbsim/fcs/right-elevon-pos-norm</input>
+   <output>/fdm/jsbsim/systems/animation/right-aileron-deg</output>
+  </filter>
+
+  <!-- volume shadow -->
+  <filter>
+   <type>gain</type>
+   <gain>0.3048</gain>
+   <input>/position/altitude-agl-ft</input>
+   <reference>-26.87</reference>
+   <output>/position/altitude-agl-m</output>
+  </filter>
+
+</PropertyList>

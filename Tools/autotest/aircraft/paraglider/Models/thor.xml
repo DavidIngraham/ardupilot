@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+ <path>thor.ac</path>
+ <offsets>
+  <x-m>0.0</x-m>
+  <y-m>0.47</y-m>
+  <z-m>-0.4</z-m>
+  <roll-deg>-8</roll-deg>
+  <pitch-deg>0</pitch-deg>
+  <heading-deg>-180</heading-deg>
+ </offsets>
+
+ <effect>
+    <inherits-from>Aircraft/paraglider/Models/Effects/reflection</inherits-from>
+    <object-name>cylinder</object-name>
+    <object-name>box</object-name>
+ </effect>
+
+ <animation>
+  <type>spin</type>
+  <object-name>propeller</object-name>
+  <object-name>cylinders</object-name>
+  <property>engines/engine[0]/rpm</property>
+  <factor>-1.0</factor>
+  <center>
+   <x-m>0.0</x-m>
+   <y-m>0.0</y-m>
+   <z-m>0.0</z-m>
+  </center>
+  <axis>
+   <x>0.0</x>
+   <y>1.0</y>
+   <z>0.0</z>
+  </axis>
+ </animation>
+ <animation>
+  <type>spin</type>
+  <object-name>propeller_disk</object-name>
+  <object-name>engine_disk</object-name>
+  <property>engines/engine[0]/rpm</property>
+  <factor>-0.08</factor>
+  <center>
+   <x-m>0.0</x-m>
+   <y-m>0.0</y-m>
+   <z-m>0.0</z-m>
+  </center>
+  <axis>
+   <x>0.0</x>
+   <y>1.0</y>
+   <z>0.0</z>
+  </axis>
+ </animation>
+
+ <animation>
+  <type>select</type>
+  <object-name>propeller</object-name>
+  <condition>
+   <less-than>
+    <property>engines/engine/rpm</property>
+    <value>400</value>
+   </less-than>
+  </condition>
+ </animation>
+ <animation>
+  <type>select</type>
+  <object-name>propeller_disk</object-name>
+  <condition>
+   <greater-than>
+    <property>engines/engine/rpm</property>
+    <value>300</value>
+   </greater-than>
+  </condition>
+ </animation>
+
+</PropertyList>

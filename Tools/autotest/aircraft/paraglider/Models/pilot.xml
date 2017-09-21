@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+ <model>
+  <name>pilot</name>
+  <path>Aircraft/Generic/Pilot/General/pilot.xml</path>
+  <offsets>
+   <x-m>0.0</x-m>
+   <y-m>-0.35</y-m>
+   <z-m>-0.54</z-m>
+   <roll-deg>0</roll-deg>
+   <pitch-deg>0</pitch-deg>
+   <heading-deg>90</heading-deg>
+  </offsets>
+ </model>
+
+ <!-- interior shadow -->
+ <effect>
+   <inherits-from>Aircraft/paraglider/Models/Effects/paraglider-interior</inherits-from>
+   <object-name>pilot</object-name>
+ </effect>
+
+</PropertyList>

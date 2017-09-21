@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+  <path>pg.ac</path>
+  <offsets>
+    <heading-deg>-90</heading-deg>
+  </offsets>
+
+  <!-- Livery System -->
+  <nasal>
+   <load>
+      var livery_update = aircraft.livery_update.new("Aircraft/paraglider/Models/Liveries", 10);
+   </load>
+   <unload>
+      livery_update.stop();
+   </unload>
+  </nasal>
+
+  <!-- Pilot -->
+  <model>
+   <name>pilot</name>
+   <path>Aircraft/paraglider/Models/pilot.xml</path>
+  </model>
+
+  <!-- GPS handheld -->
+  <model>
+   <name>iqone</name>
+   <path>Aircraft/paraglider/Models/iqone.xml</path>
+ </model>
+
+  <!-- engine model -->
+  <model>
+   <name>engine</name>
+   <path>Aircraft/paraglider/Models/thor.xml</path>
+ </model>
+
+ <effect>
+    <inherits-from>Aircraft/paraglider/Models/Effects/reflection</inherits-from>
+    <object-name>canopy</object-name>
+    <object-name>buckles</object-name>
+ </effect>
+
+ <!-- warp the trailing edges of the parachute -->
+ <effect>
+    <inherits-from>Aircraft/paraglider/Models/Effects/wingflexR</inherits-from>
+    <object-name>seg12</object-name>
+    <object-name>seg34</object-name>
+    <object-name>seg56</object-name>
+    <object-name>seg78</object-name>
+    <object-name>seg910</object-name>
+    <object-name>seg1112</object-name>
+    <object-name>seg1314</object-name>
+    <object-name>seg1516</object-name>
+    <object-name>seg1718</object-name>
+    <object-name>seg1920</object-name>
+    <object-name>seg2122</object-name>
+    <object-name>chords_r</object-name>
+    <object-name>control_r</object-name>
+  </effect>
+
+  <effect>
+    <inherits-from>Aircraft/paraglider/Models/Effects/wingflexL</inherits-from>
+    <object-name>seg2324</object-name>
+    <object-name>seg2526</object-name>
+    <object-name>seg2728</object-name>
+    <object-name>seg2930</object-name>
+    <object-name>seg3132</object-name>
+    <object-name>seg3334</object-name>
+    <object-name>seg3536</object-name>
+    <object-name>seg3738</object-name>
+    <object-name>seg3940</object-name>
+    <object-name>seg4142</object-name>
+    <object-name>seg4344</object-name>
+    <object-name>chords_l</object-name>
+    <object-name>control_l</object-name>
+  </effect>
+
+  <!-- interior shadow -->
+ <effect>
+   <inherits-from>Aircraft/paraglider/Models/Effects/paraglider-interior</inherits-from>
+   <object-name>paraglider</object-name>
+   <object-name>engine</object-name>
+ </effect>
+
+  <!-- volume shadow -->
+  <model>
+   <name>shadow</name>
+   <path>Aircraft/paraglider/Models/shadow.xml</path>
+  </model>
+
+</PropertyList>

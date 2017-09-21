@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<!--
+************************************************************************
+Powered paraglider JSBSim config file
+
+David Culp,  davidculp2@comcast.net	Initial implementation
+Erik Hofman, erik@ehofman.com		Added ram-air FMD, engine and updated 3D
+************************************************************************
+-->
+
+<PropertyList  include="Aircraft/Generic/Human/Include/walker-include.xml">
+
+ <sim>
+
+  <description>paraglider</description>
+  <long-description>
+   Powered paragliding, also known as paramotoring, is a form of ultralight aviation where the pilot wears a motor on their back (a paramotor) which provides enough thrust to take off using an adapted paraglider or paramotor wing. It can be launched in still air, and on level ground, by the pilot alone — no assistance is required.
+
+   Powered paragliders usually fly between 15 and 50 mph (25 and 72 km/h) at altitudes from 'foot-dragging on the water' up to 24,000+ ft (5400 m) although most flying is done under 500 ft (150 m) AGL (above ground level).[2] Due to the paramotor's slow forward speed, it must not be flown in conditions of high wind, turbulence, or intense thermal activity.
+  </long-description>
+  <author>Erik hofman, David Culp (FDM), Capt. Slug (3D)</author>
+  <status>release</status>
+  <rating>
+   <FDM type="int">5</FDM>
+   <systems type="int">4</systems>
+   <model type="int">4</model>
+   <cockpit type="int">4</cockpit>
+  </rating>
+
+  <tags>
+   <tag>glider</tag>
+   <tag>paraglider</tag>
+   <tag>single-engine</tag>
+   <tag>piston</tag>
+   <tag>stol</tag>
+   <tag>ultralight</tag>
+  </tags>
+
+  <previews>
+      <preview>
+        <type>exterior</type>
+        <path>Preview/paraglider.jpg</path>
+        <splash type="bool">true</splash>
+      </preview>
+    </previews>
+ 
+  <flight-model>jsb</flight-model>
+  <aero>paraglider</aero>
+
+  <model>
+   <path>Aircraft/paraglider/Models/paraglider_model.xml</path>
+
+   <!-- An exit for the walker -->
+   <map>
+    <default_exit>
+     <x-offset-m type="float">0.0</x-offset-m>
+     <y-offset-m type="float">0.0</y-offset-m>
+    </default_exit>
+   </map>
+
+   <canvas>
+    <hud type="bool">false</hud>
+   </canvas>
+  </model>
+
+  <sound>
+   <path>Aircraft/paraglider/sound.xml</path>
+  </sound>
+
+  <!-- Walker settings -->
+  <walker>
+    <gender>1</gender>
+    <altitude-ft>-5.0</altitude-ft>
+  </walker>
+
+  <presets>
+   <onground type="bool">false</onground>
+   <altitude-ft>3000</altitude-ft>
+  </presets>
+
+  <view>
+   <internal archive="y">true</internal>
+   <config>
+     <x-offset-m archive="y">0.0</x-offset-m>
+     <y-offset-m archive="y">0.05</y-offset-m>
+     <z-offset-m archive="y">-0.08</z-offset-m>
+   </config>
+  </view>
+
+  <virtual-cockpit archive="y">true</virtual-cockpit>
+  <panel>
+   <visibility archive="y">false</visibility>
+  </panel>
+
+  <systems>
+   <property-rule n="100">
+    <name>animation</name>
+    <path>Systems/Animation.xml</path>
+   </property-rule>
+  </systems>
+
+  <help>
+   <title>Powered Paraglider</title>
+   <key>
+    <name>s</name>
+    <desc>Start the engine.</desc>
+   </key>
+   <key>
+    <name>d</name>
+    <desc>Show head up display.</desc>
+   </key>
+   <key>
+    <name>{</name> 
+    <desc>Cut-off the engine.</desc>
+   </key>
+   <key>
+    <name>}</name> 
+    <desc>Restart the engine.</desc>
+   </key>
+  </help>
+
+  <true type="bool">true</true>
+  <false type="bool">false</false>
+
+ </sim>
+
+ <nasal>
+   <paraglider>
+    <file>Nasal/walk.nas</file>
+   </paraglider>
+   <iqone>
+    <file>Nasal/iqone.nas</file>
+   </iqone>
+   <pilot-movment>
+    <file>Aircraft/Generic/Human/Nasal/pilot-movment.nas</file>
+    <script>
+     var head_x = "sim/model/crew/pilot[0]/pose/position/limb[2]/x-deg";
+     var head_y = "sim/model/crew/pilot[0]/pose/position/limb[2]/y-deg";
+     var head_z = "sim/model/crew/pilot[0]/pose/position/limb[2]/z-deg";
+    </script>
+   </pilot-movment>
+  </nasal>
+
+
+ <input>
+  <keyboard include="keyboard.xml"/>
+ </input>
+
+ <controls>
+  <engines>
+   <engine>
+    <throttle type="float">0.0</throttle>
+    <magnetos>1</magnetos>
+    <state>1</state>
+   </engine>
+  </engines>
+ </controls>
+
+</PropertyList>

@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+ 
+<PropertyList>
+
+ <fx>
+  <cough>
+   <name>cough</name>
+   <mode>once</mode>
+   <path>Aircraft/paraglider/Sounds/coughing.wav</path>
+   <property>engines/engine/running</property>
+   <reference-dist>10</reference-dist>
+   <max-dist>2000</max-dist>
+   <position>
+    <x>0.13</x>
+    <y>0.0</y>
+    <z>-8.38</z>
+   </position>
+   <orientation>
+    <x>1.0</x>
+    <y>0.0</y>
+    <z>0.0</z>
+   </orientation>
+  </cough>
+
+  <engine>
+   <name>engine</name>
+   <mode>looped</mode>
+   <path>Aircraft/paraglider/Sounds/wasp.wav</path>
+   <condition>
+    <property>engines/engine/running</property>
+   </condition>
+   <!-- <delay-sec>2.0</delay-sec> -->
+   <reference-dist>50</reference-dist>
+   <max-dist>2000</max-dist>
+   <position>
+    <x>0.13</x>
+    <y>0.0</y>
+    <z>-8.38</z>
+   </position>
+   <orientation>
+    <x>1.0</x>
+    <y>0.0</y>
+    <z>0.0</z>
+   </orientation>
+   <volume version="2.0">
+    <expression>
+     <product>
+      <min>
+       <max>
+        <product>
+         <property>engines/engine/mp-osi</property>
+         <value>0.23</value>
+        </product>
+        <value>1.0</value>
+       </max>
+        <value>0.3</value>
+      </min>
+      <min>
+       <max>
+        <log> <property>orientation/alpha-deg</property> </log>
+        <value>1.2</value>
+       </max>
+       <value>1.0</value>
+      </min>
+     </product>
+    </expression>
+   </volume>
+   <pitch version="2.0">
+    <expression>
+     <min>
+      <max>
+       <sum>
+        <value>0.4</value>
+        <product>
+         <property>engines/engine/rpm</property>
+         <value>0.0001</value>
+        </product>
+       </sum>
+       <value>1.2</value>
+      </max>
+      <value>0.4</value>
+    </min>
+    </expression>
+   </pitch>
+<!-- backwards compatibility -->
+   <volume>
+    <property>engines/engine/mp-osi</property>
+    <factor>0.23</factor>
+    <min>0.3</min>
+    <max>1.0</max>
+   </volume>
+   <volume>
+    <property>orientation/alpha-deg</property>
+    <type>log</type>
+    <min>1.0</min>
+    <max>1.2</max>
+   </volume>
+   <pitch>
+    <property>engines/engine/rpm</property>
+    <factor>0.0001</factor>
+    <min>0.4</min>
+    <max>1.2</max>
+    <offset>0.4</offset>
+   </pitch>
+<!-- backwards compatibility -->
+  </engine>
+
+  <wind>
+   <name>wind</name>
+   <mode>looped</mode>
+   <type>avionics</type>
+   <path>Sounds/wind.wav</path>
+   <property>velocities/airspeed-kt</property>
+   <volume>
+    <property>position/altitude-ft</property>
+    <factor>-0.000015</factor>
+    <offset>1.0</offset>
+    <min>0.1</min>
+    <max>1.0</max>
+   </volume>
+   <volume>
+     <property>velocities/airspeed-kt</property>
+     <factor>0.015</factor>
+     <min>0.03</min>
+     <max>1.2</max>
+   </volume>
+   <pitch>
+    <property>velocities/airspeed-kt</property>
+    <factor>0.003</factor>
+    <offset>1.25</offset>
+   </pitch>
+  </wind>
+
+</fx>
+ 
+</PropertyList>

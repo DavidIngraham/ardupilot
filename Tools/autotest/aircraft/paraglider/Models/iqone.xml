@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+ <path>iqone.ac</path>
+ <offsets>
+  <x-m>-0.24</x-m>
+  <y-m>-0.06</y-m>
+  <z-m>-0.35</z-m>
+  <heading-deg>-180</heading-deg>
+  <pitch-deg>15</pitch-deg>
+  <roll-deg>-52</roll-deg>
+ </offsets>
+
+<!--
+ <animation>
+  <type>select</type>
+  <object-name>display_image</object-name>
+  <property>/sim/false</property>
+ </animation>
+-->
+
+</PropertyList>

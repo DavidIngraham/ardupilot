@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<PropertyList>
+
+  <key n="115">
+   <name>s</name>
+   <desc>Start/Stop the engine</desc>
+   <binding>
+    <command>property-toggle</command>
+    <property>/controls/engines/engine/starter</property>
+   </binding>
+  </key>
+
+<!-- HUD -->
+   <key n="100">
+   <name>d</name>
+   <desc>Display the HUD</desc>
+   <binding>
+    <command>property-assign</command>
+    <property>/sim/canvas/hud</property>
+    <value type="bool">true</value>
+   </binding>
+  </key>
+
+<!-- walk view -->
+   <key n="119">
+    <name>w</name>
+     <desc>Walk forward toward view</desc>
+     <repeatable>true</repeatable>
+     <binding>
+      <command>nasal</command>
+      <script>walk.walk_about(0.1)</script>
+     </binding>
+   </key>
+
+   <key n="87">
+    <name>W</name>
+    <desc>Walk backward from view</desc>
+    <repeatable>true</repeatable>
+    <binding>
+     <command>nasal</command>
+     <script>walk.walk_about(-0.1)</script>
+    </binding>
+   </key>
+
+</PropertyList>

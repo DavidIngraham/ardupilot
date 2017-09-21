@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PropertyList>
+  <name>Aircraft/paraglider/Models/Effects/reflection</name>
+  <inherits-from>Aircraft/paraglider/Models/Effects/bumpspec</inherits-from>
+</PropertyList>
+
