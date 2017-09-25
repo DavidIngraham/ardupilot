@@ -229,30 +229,43 @@ def kill_tasks():
 
 
 def check_jsbsim_version():
-    """Assert that the JSBSim we will run is the one we expect to run"""
+    """
+        Assert that the JSBSim we will run is the one we expect to run.
+        We Require a JSBSim install from any time after the FGNetwork 
+        protocol was updated in Novermber, 2013.
+    """
+
     jsbsim_cmd = ["JSBSim", "--version"]
     progress_cmd("Get JSBSim version", jsbsim_cmd)
     try:
         jsbsim_version = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE).communicate()[0]
     except OSError:
-        jsbsim_version = ''     # this value will trigger the ".index"
-                                # check below and produce a reasonable
-                                # error message
-    try:
-        jsbsim_version.index(b"ArduPilot")
-    except ValueError:
         print(r"""
 =========================================================
-You need the latest ArduPilot version of JSBSim installed
-and in your \$PATH
+Could not Run JSBSim.
 
-Please get it from git://github.com/tridge/jsbsim.git
-See
-http://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html
-for more details
+Please ensure JSBsim (2014 or Later) is installed and 
+in your path.
 =========================================================
-""")
+""")    
         sys.exit(1)
+    if "ArduPilot" in jsbsim_version:
+        print(r"""
+=========================================================
+Detected Ardupilot fork of JSBSim.
+ArduPilot now supports JSBSim master.
+
+It is recommended that you update your JSBSim 
+installation to the latest stable release.
+
+See <Wiki TBD> For more details.
+
+=========================================================
+""")    
+        sys.exit(1)     
+    else:
+        print ("Starting JSBSim version", jsbsim_version)
+        
 
 
 def progress(text):
