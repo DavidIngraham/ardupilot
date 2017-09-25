@@ -126,7 +126,7 @@ bool JSBSim::create_templates(void)
         AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
-            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
+            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"UDP\" rate=\"1000\"/>\n",
             fdm_port);
     fclose(f);
 
@@ -141,8 +141,8 @@ bool JSBSim::create_templates(void)
     fprintf(f,
             "<?xml version=\"1.0\"?>\n"
             "<initialize name=\"Start up location\">\n"
-            "  <latitude unit=\"DEG\"> %f </latitude>\n"
-            "  <longitude unit=\"DEG\"> %f </longitude>\n"
+            "  <latitude type=\"geod\" unit=\"DEG\"> %f  </latitude>\n"
+            "  <longitude type=\"geod\" unit=\"DEG\"> %f  </longitude>\n"
             "  <altitude unit=\"M\"> 1.3 </altitude>\n"
             "  <vt unit=\"FT/SEC\"> 0.0 </vt>\n"
             "  <gamma unit=\"DEG\"> 0.0 </gamma>\n"
@@ -200,9 +200,7 @@ bool JSBSim::start_JSBSim(void)
 
         int ret = execlp("JSBSim",
                          "JSBSim",
-                         "--realtime",
                          "--suspend",
-                         "--nice",
                          "--simulation-rate=1000",
                          logdirective,
                          script,
@@ -218,18 +216,17 @@ bool JSBSim::start_JSBSim(void)
     // read startup to be sure it is running
     char c;
     if (read(jsbsim_stdout, &c, 1) != 1) {
-        AP_HAL::panic("Unable to start JSBSim");
+        AP_HAL::panic("Unable to start JSBSim\n");
     }
 
     if (!expect("JSBSim Execution beginning")) {
-        AP_HAL::panic("Failed to start JSBSim");
+        AP_HAL::panic(" Failed to start JSBSim\n");
     }
     if (!open_control_socket()) {
         AP_HAL::panic("Failed to open JSBSim control socket");
     }
 
     fcntl(jsbsim_stdout, F_SETFL, fcntl(jsbsim_stdout, F_GETFL, 0) | O_NONBLOCK);
-
     started_jsbsim = true;
     check_stdout();
     close(devnull);
@@ -284,14 +281,14 @@ bool JSBSim::open_control_socket(void)
     if (!sock_control.connect("127.0.0.1", control_port)) {
         return false;
     }
-    printf("Opened JSBSim control socket\n");
+    printf(" Opened JSBSim control socket\n");
     sock_control.set_blocking(false);
     opened_control_socket = true;
 
     char startup[] =
         "info\n"
         "resume\n"
-        "step\n"
+        "iterate 1"
         "set atmosphere/turb-type 4\n";
     sock_control.send(startup, strlen(startup));
     return true;
@@ -351,7 +348,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set atmosphere/wind-mag-fps %f\n"
              "set atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps %f\n"
              "set atmosphere/turbulence/milspec/severity %f\n"
-             "step\n",
+             "iterate 1\n",
              aileron, elevator, rudder, throttle,
              radians(input.wind.direction),
              wind_speed_fps,
@@ -455,13 +452,12 @@ void JSBSim::drain_control_socket()
 void JSBSim::update(const struct sitl_input &input)
 {
     while (!initialised) {
-        if (!create_templates() ||
-            !start_JSBSim() ||
-            !open_control_socket() ||
-            !open_fdm_socket()) {
-            time_now_us = 1;
-            return;
-        }
+        if (!create_templates() || 
+            !start_JSBSim()
+            ) {
+                printf("JSBSim Initialization Failed");
+                exit(1);                              
+            }
         initialised = true;
     }
     send_servos(input);
