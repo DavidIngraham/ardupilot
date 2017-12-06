@@ -47,6 +47,11 @@ public:
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
+
+    bool enabled(void) 
+    {
+        return enable;
+    }
     
 private:
     const AP_RPM &rpm;
