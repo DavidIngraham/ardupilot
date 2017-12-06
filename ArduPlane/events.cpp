@@ -153,6 +153,23 @@ void Plane::low_battery_event(void)
     AP_Notify::flags.failsafe_battery = true;
 }
 
+void Plane::low_fuel_event(void)
+{
+    if (failsafe.low_fuel) {
+        return;
+    }
+    gcs().send_text(MAV_SEVERITY_WARNING, "Low fuel: %.2f\%, %.0f ml remaining",
+                      (double)g2.fuel_monitor.get_percent(), (double)g2.fuel_monitor.get_volume_remaining());
+    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        set_mode(RTL, MODE_REASON_FUEL_FAILSAFE);
+        aparm.throttle_cruise.load();
+    }
+    failsafe.low_fuel = true;
+
+    // Behavior of LEDs and buzzers will be the same as a batter failsafe
+    AP_Notify::flags.failsafe_battery = true;
+}
+
 void Plane::update_events(void)
 {
     ServoRelayEvents.update_events();

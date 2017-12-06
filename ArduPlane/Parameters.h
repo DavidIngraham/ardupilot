@@ -545,6 +545,11 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
+    AP_FuelMonitor fuel_monitor;
+
+    // Fuel Failsafe threshold volume
+    AP_Float failsafe_fuel_volume;
+
 };
 
 extern const AP_Param::Info var_info[];

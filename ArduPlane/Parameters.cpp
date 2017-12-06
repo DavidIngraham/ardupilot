@@ -1186,12 +1186,25 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
 
+    // @Group: FUEL_
+    // @Path: ../libraries/AP_FuelMonitor/AP_FuelMonitor.cpp
+    AP_SUBGROUPINFO(fuel_monitor, "FUEL_", 12, ParametersG2, AP_FuelMonitor),
+
+    // @Param: FS_FUEL_VOL
+    // @DisplayName: Low Fuel Failsafe Threshold
+    // @Description: Fuel volume to trigger failsafe. Set to 0 to disable fuel failsafe. If the fuel is below this volume then the plane will switch to RTL mode.
+    // @Range: 0 
+    // @Units: grams
+    // @User: Advanced
+    AP_GROUPINFO("FS_FUEL_VOL", 13, ParametersG2, failsafe_fuel_volume, 0),    
+
     AP_GROUPEND
 };
 
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor, plane.ahrs),
-    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm),
+    fuel_monitor()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

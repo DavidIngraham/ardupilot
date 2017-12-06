@@ -136,6 +136,51 @@ void Plane::read_battery(void)
     }
 }
 
+// read_fuel_monitor - reads fuel monitor and invokes failsafe
+// should be called at 10hz
+void Plane::read_fuel_monitor(void)
+{
+    
+    if (!g2.fuel_monitor.enabled()) {
+        return;
+    }
+
+    //Get the actual output to the throttle channel and scale it as a percent.
+    int8_t throttle = constrain_int16(50*(SRV_Channels::get_output_norm(SRV_Channel::k_throttle)+1), 0, 100);
+
+    bool armed = 0;
+
+    // If we have an enabled ice library, use that to determine if the engine is running
+    // Otherwise, assume the engine is running when the vehicle is armed and the throttle is nonzero
+    if( g2.ice_control.enabled()) {
+        armed = (g2.ice_control.get_state() == AP_ICEngine::ICE_RUNNING);
+    } else if (arming.is_armed() && (throttle > 0) ) {
+        armed = 1;
+    }
+
+    // Give the fuel monitor information about throttle, attitude, etc.
+    AP_FuelMonitor::vehicle_status_t fuel_status = {
+        throttle,              // Current Throttle Percentage
+        aparm.throttle_cruise,     // User Defined cruise throttle
+        ahrs.roll,             // Vehicle Roll
+        ahrs.pitch,            // Vehicle Pitch
+        armed                  // Engine state
+    };
+
+    g2.fuel_monitor.read(fuel_status);
+
+    // Trigger a low fuel failsafe if we are out of fuel
+    if (hal.util->get_soft_armed() &&
+        g2.fuel_monitor.get_volume_remaining() < g2.failsafe_fuel_volume)
+    {
+        low_fuel_event();
+    }
+    
+    if (should_log(MASK_LOG_CURRENT)) {
+        Log_Write_Fuel();
+    }
+}
+
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
 void Plane::read_receiver_rssi(void)

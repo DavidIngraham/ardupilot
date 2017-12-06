@@ -106,6 +106,9 @@ void Plane::init_ardupilot()
     // initialise battery monitoring
     battery.init();
 
+    // initialize fuel monitor
+    g2.fuel_monitor.init();
+
     rpm_sensor.init();
 
     // setup telem slots with serial ports

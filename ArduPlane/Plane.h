@@ -79,6 +79,7 @@
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
+#include <AP_FuelMonitor/AP_FuelMonitor.h> // Fuel monitor library
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -330,6 +331,9 @@ private:
 
         // flag to hold whether battery low voltage threshold has been breached
         bool low_battery:1;
+
+        // flag to hold whether battery low voltage threshold has been breached
+        uint8_t low_fuel:1;
 
         // true if an adsb related failsafe has occurred
         bool adsb:1;
@@ -835,6 +839,7 @@ private:
     void Log_Write_Sonar();
     void Log_Write_Optflow();
     void Log_Write_Current();
+    void Log_Write_Fuel();
     void Log_Arm_Disarm();
     void Log_Write_GPS(uint8_t instance);
     void Log_Write_IMU();
@@ -906,6 +911,7 @@ private:
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
     void low_battery_event(void);
+    void low_fuel_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
@@ -959,6 +965,7 @@ private:
     void read_airspeed(void);
     void zero_airspeed(bool in_startup);
     void read_battery(void);
+    void read_fuel_monitor(void);
     void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);

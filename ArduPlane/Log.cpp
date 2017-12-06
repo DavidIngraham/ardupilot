@@ -271,6 +271,11 @@ void Plane::Log_Write_Current()
     DataFlash.Log_Write_Power();
 }
 
+void Plane::Log_Write_Fuel()
+{
+    DataFlash.Log_Write_Fuel(g2.fuel_monitor);
+}
+
 void Plane::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
