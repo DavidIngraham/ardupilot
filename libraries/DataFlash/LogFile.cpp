@@ -1547,6 +1547,18 @@ void DataFlash_Class::Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f 
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+void DataFlash_Class::Log_Write_Fuel(AP_FuelMonitor &fuel_monitor)
+{
+    struct log_Fuel pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_FUEL_MSG),
+        time_us        : AP_HAL::micros64(),
+        percent        : (int16_t)fuel_monitor.get_percent(),
+        volume         : (float)fuel_monitor.get_volume_remaining(),
+        burn_rate      : (float)fuel_monitor.get_burn_rate()
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 void DataFlash_Class::Log_Write_Current_instance(const AP_BattMonitor &battery,
                                                  const uint64_t time_us,
                                                  const uint8_t battery_instance,

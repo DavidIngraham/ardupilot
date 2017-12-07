@@ -1033,6 +1033,14 @@ struct PACKED log_DSTL {
     float D;
 };
 
+struct PACKED log_Fuel {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t percent;
+    float volume;
+    float burn_rate;
+};
+
 // #endif // SBP_HW_LOGGING
 
 // FMT messages define all message formats other than FMT
@@ -1115,6 +1123,11 @@ struct PACKED log_DSTL {
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
 #define CURR_CELL_UNITS  "svvvvvvvvvvv"
 #define CURR_CELL_MULTS  "F00000000000"
+
+#define FUEL_LABELS "TimeUS,Percent,Volume,Rate"
+#define FUEL_FMT    "Qhff"
+#define FUEL_UNITS  "s???"
+#define FUEL_MULTS  "F---"
 
 /*
 Format characters in the format string for binary log messages
@@ -1368,9 +1381,11 @@ Format characters in the format string for binary log messages
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-            "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
+      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-            "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
+    { LOG_FUEL_MSG, sizeof(log_Fuel), \
+      "FUEL", FUEL_FMT, FUEL_LABELS, FUEL_UNITS, FUEL_MULTS}
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1517,6 +1532,7 @@ enum LogMessages {
     LOG_SRTL_MSG,
     LOG_ISBH_MSG,
     LOG_ISBD_MSG,
+    LOG_FUEL_MSG,
 
 };
 
