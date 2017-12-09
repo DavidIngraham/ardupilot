@@ -618,6 +618,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
+    case MSG_FUEL_STATUS:
+        CHECK_PAYLOAD_SIZE(FUEL_STATUS);
+        send_fuel_status(plane.g2.fuel_monitor);
+        break;
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -836,6 +840,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_VIBRATION);
+        send_message(MSG_FUEL_STATUS);
     }
 
     if (gcs().out_of_time()) return;
