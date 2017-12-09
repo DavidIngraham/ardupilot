@@ -211,6 +211,20 @@ bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
     return true;
 }
 
+void GCS_MAVLINK::send_fuel_status(const AP_FuelMonitor &fuel_monitor) const
+{
+    if (!fuel_monitor.enabled()) {
+        return;
+    }
+
+    mavlink_msg_fuel_status_send(
+            chan,
+            fuel_monitor.get_volume_remaining(),
+            fuel_monitor.get_percent(),
+            fuel_monitor.get_burn_rate());
+
+}
+
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor) const
 {
     if (sensor == nullptr) {

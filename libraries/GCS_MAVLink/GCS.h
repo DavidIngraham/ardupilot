@@ -81,6 +81,7 @@ enum ap_message {
     MSG_AOA_SSA,
     MSG_LANDING,
     MSG_NAMED_FLOAT,
+    MSG_FUEL_STATUS,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
@@ -155,6 +156,7 @@ public:
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
     bool send_battery_status(const AP_BattMonitor &battery) const;
+    void send_fuel_status(const AP_FuelMonitor &fuel_monitor) const;
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
