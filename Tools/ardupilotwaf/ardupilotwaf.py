@@ -28,6 +28,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
+    'AP_EFI',
     'AP_GPS',
     'AP_HAL',
     'AP_HAL_Empty',
