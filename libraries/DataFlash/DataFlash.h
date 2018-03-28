@@ -23,7 +23,7 @@
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
-
+#include <AP_EFI/AP_EFI.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -158,6 +158,7 @@ public:
     void Log_Write_Beacon(AP_Beacon &beacon);
     void Log_Write_Proximity(AP_Proximity &proximity);
     void Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
+    void Log_Write_EFI(AP_EFI &efis);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
     void Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
