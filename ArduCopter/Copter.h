@@ -84,6 +84,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
+#include <AP_EFI/AP_EFI.h>
 
 // Configuration
 #include "defines.h"
@@ -238,6 +239,9 @@ private:
     } rangefinder_state = { false, false, 0, 0 };
 
     AP_RPM rpm_sensor;
+
+    // EFI library
+    AP_EFI efi;
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -781,6 +785,7 @@ private:
     void send_simstate(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
+    void send_efi(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
