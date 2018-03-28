@@ -198,6 +198,34 @@ void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
     }
 }
 
+/*
+  send EFI packet
+ */
+void NOINLINE Copter::send_efi(mavlink_channel_t chan)
+{
+#if EFI_ENABLED == ENABLED
+    EFI_State* first_efi_state = efi.get_state(0);
+    
+    mavlink_msg_efi_status_send(
+        chan,
+        AP_EFI::is_healthy(*first_efi_state),
+        first_efi_state->ecu_index,
+        first_efi_state->engine_speed_rpm,
+        first_efi_state->estimated_consumed_fuel_volume_cm3,
+        first_efi_state->fuel_consumption_rate_cm3pm,
+        first_efi_state->engine_load_percent,
+        first_efi_state->throttle_position_percent,
+        first_efi_state->spark_dwell_time_ms,
+        first_efi_state->atmospheric_pressure_kpa,
+        first_efi_state->intake_manifold_pressure_kpa,
+        (first_efi_state->intake_manifold_temperature - 273.0f),
+        (first_efi_state->cylinder_status[0].cylinder_head_temperature - 273.0f),
+        first_efi_state->cylinder_status[0].ignition_timing_deg,
+        first_efi_state->cylinder_status[0].injection_time_ms);
+    
+#endif
+}
+
 
 /*
   send PID tuning message
@@ -368,6 +396,13 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         copter.send_rpm(chan);
+        break;
+
+    case MSG_EFI_STATUS:
+#if EFI_ENABLED == ENABLED
+        CHECK_PAYLOAD_SIZE(EFI_STATUS);
+        copter.send_efi(chan);
+#endif
         break;
 
     case MSG_TERRAIN:
@@ -644,6 +679,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
         send_message(MSG_RPM);
+        send_message(MSG_EFI_STATUS);
     }
 
     if (gcs().out_of_time()) return;

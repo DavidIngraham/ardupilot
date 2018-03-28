@@ -719,6 +719,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
 #endif
 
+#if EFI_ENABLED == ENABLED
+    // @Group: EFI
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    GOBJECT(efi,  "EFI", AP_EFI),
+#endif
+
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp

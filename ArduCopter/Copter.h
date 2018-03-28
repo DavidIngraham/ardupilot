@@ -157,6 +157,9 @@
  # include <AP_WheelEncoder/AP_WheelEncoder.h>
  # include <AP_Winch/AP_Winch.h>
 #endif
+#if EFI_ENABLED == ENABLED
+ # include <AP_EFI/AP_EFI.h>
+#endif
 
 // Local modules
 #include "Parameters.h"
@@ -238,6 +241,11 @@ private:
     } rangefinder_state = { false, false, 0, 0 };
 
     AP_RPM rpm_sensor;
+
+#if EFI_ENABLED == ENABLED
+    // EFI library
+    AP_EFI efi;
+#endif
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -781,6 +789,7 @@ private:
     void send_simstate(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
+    void send_efi(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
@@ -917,6 +926,7 @@ private:
     void update_visual_odom();
     void winch_init();
     void winch_update();
+    void efi_update();
 
     // setup.cpp
     void report_compass();
