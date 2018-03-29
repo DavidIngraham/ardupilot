@@ -34,7 +34,6 @@
 #include <uavcan/equipment/indication/RGB565.hpp>
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
-#include <uavcan/equipment/ecu/Status.hpp>
 #include <uavcan/equipment/ice/reciprocating/Status.hpp>
 #include <uavcan/equipment/ice/reciprocating/CylinderStatus.hpp>
 
