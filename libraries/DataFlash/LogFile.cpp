@@ -1983,24 +1983,8 @@ void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
 
     // Write data for a max of 4 cylinders
     for (int i = 0; i < 4; i++) {
-        LogMessages msg_type;
-        switch (i) {
-            case 0:
-                msg_type = LOG_EFI_CYL1_MSG;
-                break;
-            case 1:
-                msg_type = LOG_EFI_CYL2_MSG;
-                break;
-            case 2:
-                msg_type = LOG_EFI_CYL3_MSG;
-                break;
-            case 3:
-                msg_type = LOG_EFI_CYL4_MSG;
-                break;
-        }
-        
         struct log_EFI_CYL pkt_efi_cyl = {
-            LOG_PACKET_HEADER_INIT(msg_type),
+            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_EFI_CYL1_MSG + i)),
             time_us                     : AP_HAL::micros64(),
             ignition_timing_deg         : first_efi_state->cylinder_status[i].ignition_timing_deg,
             injection_time_ms           : first_efi_state->cylinder_status[i].injection_time_ms,
