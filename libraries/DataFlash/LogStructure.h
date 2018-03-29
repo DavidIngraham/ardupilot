@@ -1191,7 +1191,7 @@ struct PACKED log_EFI_CYL {
 #define EFI_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
 #define EFI_FMT    "QBIffffffffffBB" 
 #define EFI_UNITS  "s%qsPPOOPOP--%-"
-#define EFI_MULTS  "F00C33003030000"
+#define EFI_MULTS  "F00C--00-0-0000"
 
 #define EFI2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
 #define EFI2_FMT    "QBBBBBBBBBBBB"
