@@ -102,10 +102,12 @@ void Copter::rpm_update(void)
  */
 void Copter::efi_update(void)
 {
+#if EFI_ENABLED == ENABLED
     efi.update();
     if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_EFI(efi);
     }
+#endif
 }
 
 // initialise compass

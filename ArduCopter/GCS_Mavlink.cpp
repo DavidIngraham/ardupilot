@@ -402,8 +402,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_ECOTRONS_STATUS:
+#if EFI_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ECOTRONS_STATUS);
         copter.send_efi(chan);
+#endif
         break;
 
     case MSG_TERRAIN:

@@ -228,8 +228,10 @@ void Copter::init_ardupilot()
     // initialise AP_RPM library
     rpm_sensor.init();
     
+#if EFI_ENABLED ==ENABLED
     // initialize AP_EFI library
     efi.init();
+#endif
 
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library

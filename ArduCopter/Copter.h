@@ -84,7 +84,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
-#include <AP_EFI/AP_EFI.h>
 
 // Configuration
 #include "defines.h"
@@ -157,6 +156,9 @@
 #if WINCH_ENABLED == ENABLED
  # include <AP_WheelEncoder/AP_WheelEncoder.h>
  # include <AP_Winch/AP_Winch.h>
+#endif
+#if EFI_ENABLED == ENABLED
+ # include <AP_EFI/AP_EFI.h>
 #endif
 
 // Local modules
