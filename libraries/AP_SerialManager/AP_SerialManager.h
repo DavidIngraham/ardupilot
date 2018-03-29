@@ -72,6 +72,11 @@
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
+// MegaSquirt EFI protocol
+#define AP_SERIALMANAGER_EFI_MS_BAUD           115
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX     16
+
 
 class AP_SerialManager {
 public:
@@ -98,7 +103,8 @@ public:
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
-        SerialProtocol_Sbus1 = 15
+        SerialProtocol_Sbus1 = 15,
+        SerialProtocol_EFI_MS = 16                   // MegaSquirt EFI serial protocol
     };
 
     // get singleton instance
