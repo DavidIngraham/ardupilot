@@ -45,7 +45,7 @@ public:
     AP_EFI();
 
     // Initializes backends based on parameters
-    void init();
+    bool init();
 
     // Requests all backends to update the frontend. Should be called at 10Hz.
     void update();

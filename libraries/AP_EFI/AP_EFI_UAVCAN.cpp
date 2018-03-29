@@ -12,13 +12,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <AP_HAL/AP_HAL.h>
+#if HAL_WITH_UAVCAN
 
 #include "AP_EFI_UAVCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL &hal;
 
-#if HAL_WITH_UAVCAN
+
 
 
 AP_EFI_UAVCAN::AP_EFI_UAVCAN(EFI_State& _efi_state, uint8_t efi_source_node_id)
@@ -67,4 +69,4 @@ void AP_EFI_UAVCAN::handle_efi_msg(const EFI_State& message_efi_state)
 }
 
 
-#endif
+#endif //HAL_WITH_UAVCAN

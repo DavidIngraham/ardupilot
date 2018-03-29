@@ -49,5 +49,3 @@ protected:
     // Internal state for this driver (before copying to frontend)
     EFI_State _internal_state;
 };
-
-#include "AP_EFI_UAVCAN.h"

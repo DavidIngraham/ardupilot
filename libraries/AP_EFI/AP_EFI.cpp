@@ -14,7 +14,9 @@
  */
 
 #include "AP_EFI.h"
+#if HAL_WITH_UAVCAN
 #include "AP_EFI_UAVCAN.h"
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,23 +75,29 @@ AP_EFI::AP_EFI()
 }
 
 // Initialize backends based on existing params
-void AP_EFI::init()
+bool AP_EFI::init()
 {
     if (_backend_count > 0) {
         // Init called twice, perhaps
-        return;
+        return false;
     }
 
     // Otherwise, initialize backends as required
     for (uint8_t i = 0; i < EFI_MAX_INSTANCES; i++) {
-        if (_type[i] == EFI_COMMUNICATION_TYPE_UAVCAN) {
+        if (_type[i] == EFI_COMMUNICATION_TYPE_SERIAL) {
+            // TODO: not supported yet
+            return false;
+#if HAL_WITH_UAVCAN
+        } else if (_type[i] == EFI_COMMUNICATION_TYPE_UAVCAN) {
             hal.console->printf("AP_EFI: Starting UAVCAN backend\n");
             _backends[_backend_count] = new AP_EFI_UAVCAN(_state[_backend_count], _uavcan_node_id[_backend_count]);
             _backend_count++;
-        } else if (_type[i] == EFI_COMMUNICATION_TYPE_SERIAL) {
-            // TODO: not supported yet
+#endif //HAL_WITH_UAVCAN
+        } else {
+            return false;
         }
     }
+    return true;
 }
 
 // Ask all backends to update the frontend
