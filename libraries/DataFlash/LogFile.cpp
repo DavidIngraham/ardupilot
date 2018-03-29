@@ -1936,6 +1936,7 @@ void DataFlash_Class::Log_Write_SRTL(bool active, uint16_t num_points, uint16_t 
         D               : breadcrumb.z
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
+}
 
 void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
 {

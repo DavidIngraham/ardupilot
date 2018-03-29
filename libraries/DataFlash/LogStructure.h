@@ -1190,12 +1190,18 @@ struct PACKED log_EFI_CYL {
 
 #define EFI_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
 #define EFI_FMT    "QBIffffffffffBB" 
+#define EFI_UNITS  "s%qsPPOOPOP--%-"
+#define EFI_MULTS  "F00C33003030000"
 
 #define EFI2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
 #define EFI2_FMT    "QBBBBBBBBBBBB"
+#define EFI2_UNITS  "s------------"
+#define EFI2_MULTS  "F------------"
 
 #define EFI_CYL_LABELS "TimeUS,IgnT,InjT,CHT,EGT,Lambda,IDX"
 #define EFI_CYL_FMT    "QfffffB"
+#define EFI_CYL_UNITS  "sdsOO--"
+#define EFI_CYL_MULTS  "F0C0000"
 
 /*
 Format characters in the format string for binary log messages
@@ -1454,12 +1460,12 @@ Format characters in the format string for binary log messages
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
-    { LOG_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS }, \
-    { LOG_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS }, \
-    { LOG_EFI_CYL1_MSG, sizeof(log_EFI_CYL), "ECL1", EFI_CYL_FMT, EFI_CYL_LABELS }, \
-    { LOG_EFI_CYL2_MSG, sizeof(log_EFI_CYL), "ECL2", EFI_CYL_FMT, EFI_CYL_LABELS }, \
-    { LOG_EFI_CYL3_MSG, sizeof(log_EFI_CYL), "ECL3", EFI_CYL_FMT, EFI_CYL_LABELS }, \
-    { LOG_EFI_CYL4_MSG, sizeof(log_EFI_CYL), "ECL4", EFI_CYL_FMT, EFI_CYL_LABELS }
+    { LOG_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS, EFI_UNITS, EFI_MULTS }, \
+    { LOG_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS, EFI2_UNITS, EFI2_MULTS }, \
+    { LOG_EFI_CYL1_MSG, sizeof(log_EFI_CYL), "ECL1", EFI_CYL_FMT, EFI_CYL_LABELS, EFI_CYL_UNITS, EFI_CYL_MULTS }, \
+    { LOG_EFI_CYL2_MSG, sizeof(log_EFI_CYL), "ECL2", EFI_CYL_FMT, EFI_CYL_LABELS, EFI_CYL_UNITS, EFI_CYL_MULTS }, \
+    { LOG_EFI_CYL3_MSG, sizeof(log_EFI_CYL), "ECL3", EFI_CYL_FMT, EFI_CYL_LABELS, EFI_CYL_UNITS, EFI_CYL_MULTS }, \
+    { LOG_EFI_CYL4_MSG, sizeof(log_EFI_CYL), "ECL4", EFI_CYL_FMT, EFI_CYL_LABELS, EFI_CYL_UNITS, EFI_CYL_MULTS }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
