@@ -122,22 +122,22 @@ struct Fuel_Tank_Status {
 // Per-cylinder status struct
 struct Cylinder_Status {
     // Cylinder ignition timing (angular degrees of the crankshaft)
-    float ignition_timing_deg = NAN;
+    float ignition_timing_deg;
 
     // Fuel injection time (millisecond)
-    float injection_time_ms = NAN;
+    float injection_time_ms;
 
     // Cylinder head temperature (CHT) (kelvin)
-    float cylinder_head_temperature = NAN;
+    float cylinder_head_temperature;
 
     // Exhaust gas temperature (EGT) (kelvin)
     // If this cylinder is not equipped with an EGT sensor - will be NaN
     // If there is a single shared EGT sensor, will be the same value for all cylinders
-    float exhaust_gas_temperature = NAN;
+    float exhaust_gas_temperature;
 
     // Estimated lambda coefficient (dimensionless ratio)
     // Useful for monitoring and tuning purposes.
-    float lambda_coefficient = NAN;
+    float lambda_coefficient;
 };
 
 // Stores the current state read by the EFI system
