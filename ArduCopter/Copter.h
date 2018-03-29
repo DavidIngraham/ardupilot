@@ -240,8 +240,10 @@ private:
 
     AP_RPM rpm_sensor;
 
+#if EFI_ENABLED == ENABLED
     // EFI library
     AP_EFI efi;
+#endif
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -922,6 +924,7 @@ private:
     void update_visual_odom();
     void winch_init();
     void winch_update();
+    void efi_update();
 
     // setup.cpp
     void report_compass();
