@@ -515,7 +515,7 @@ AP_UAVCAN::AP_UAVCAN() :
     }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
-        _efi_nodes[i] = 255;
+        _efi_nodes[i] = UINT8_MAX;
         _efi_node_taken[i] = 0;
     }
 
@@ -529,7 +529,7 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_listener_to_node[i] = UINT8_MAX;
         _mag_listeners[i] = nullptr;
 
-        _efi_listener_to_node[i] = 255;
+        _efi_listener_to_node[i] = UINT8_MAX;
         _efi_listeners[i] = nullptr;
         _mag_listener_sensor_ids[i] = 0;
     }
@@ -1406,14 +1406,14 @@ uint8_t AP_UAVCAN::register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_lis
 //EFI
 uint8_t AP_UAVCAN::register_efi_listener(AP_EFI_Backend* new_listener, uint8_t preferred_channel)
 {
-    uint8_t sel_place = 255, ret = 0;
+    uint8_t sel_place = UINT8_MAX, ret = 0;
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
         if (_efi_listeners[i] == nullptr) {
             sel_place = i;
             break;
         }
     }
-    if (sel_place != 255) {
+    if (sel_place != UINT8_MAX) {
         if (preferred_channel != 0) {
             if (preferred_channel < AP_UAVCAN_MAX_EFI_NODES) {
                 _efi_listeners[sel_place] = new_listener;
@@ -1489,7 +1489,7 @@ void AP_UAVCAN::remove_efi_listener(AP_EFI_Backend* rem_listener)
             if (_efi_node_taken[_efi_listener_to_node[i]] > 0) {
                 _efi_node_taken[_efi_listener_to_node[i]]--;
             }
-            _efi_listener_to_node[i] = 255;
+            _efi_listener_to_node[i] = UINT8_MAX;
         }
     }
 }
@@ -1505,7 +1505,7 @@ EFI_State *AP_UAVCAN::find_efi_node(uint8_t node)
     
     // If not - try to find free space for it
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
-        if (_efi_nodes[i] == 255) {
+        if (_efi_nodes[i] == UINT8_MAX) {
             _efi_nodes[i] = node;
             return &_efi_node_state[i];
         }
