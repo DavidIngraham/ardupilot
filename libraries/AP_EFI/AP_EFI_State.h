@@ -100,24 +100,6 @@ enum Spark_Plug_Usage {
  * All floating point fields are optional unless stated otherwise; unknown/unapplicable fields will be NaN.
  ***************/
 
-// TODO: not sure what to do with this yet - maybe different library?
-struct Fuel_Tank_Status {
-    
-    // The estimated/measured amount of fuel, all fields are required.
-    uint8_t available_fuel_volume_percent: 7; // 0% to 100%
-    float   available_fuel_volume_cm3;        // centimeter^3
-
-    // Estimate of the current fuel consumption rate ((centimeter^3)/minute)
-    // The flow can be negative if the fuel is being transferred between the tanks or during refueling.
-    // This field is required.
-    float fuel_consumption_rate_cm3pm;
-
-    // Fuel temperature (kelvin), optional field, to be set to NaN if not provided.
-    float fuel_temperature;
-
-    // ID of the current fuel tank.
-    uint8_t fuel_tank_id;
-};
 
 // Per-cylinder status struct
 struct Cylinder_Status {

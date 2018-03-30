@@ -14,6 +14,7 @@
  */
 
 #include "AP_EFI.h"
+#include "AP_EFI_Serial_MS.h"
 #if HAL_WITH_UAVCAN
 #include "AP_EFI_UAVCAN.h"
 #endif
@@ -33,7 +34,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:UAVCAN
+    // @Values: 0:None,1:UAVCAN, 2:Serial-MS
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("_TYPE", 1, AP_EFI, _type[0], 1),
@@ -50,7 +51,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: EFI #2 communication type
     // @Description: What method of communication is used for EFI #2
-    // @Values: 0:None,1:UAVCAN
+    // @Values: 0:None,1:UAVCAN, 2:Serial-MS
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("2_TYPE", 3, AP_EFI, _type[1], 0),
@@ -75,29 +76,30 @@ AP_EFI::AP_EFI()
 }
 
 // Initialize backends based on existing params
-bool AP_EFI::init()
+void AP_EFI::init()
 {
     if (_backend_count > 0) {
         // Init called twice, perhaps
-        return false;
+        return;
     }
-
     // Otherwise, initialize backends as required
     for (uint8_t i = 0; i < EFI_MAX_INSTANCES; i++) {
-        if (_type[i] == EFI_COMMUNICATION_TYPE_SERIAL) {
-            // TODO: not supported yet
-            return false;
+        
+        // Check for MegaSquirt Serial EFI
+        if (_type[i] == EFI_COMMUNICATION_TYPE_SERIAL_MS) {
+            hal.console->printf("AP_EFI: Starting MegaSquirt Serial backend\n");
+            _backends[_backend_count] = new AP_EFI_Serial_MS(_state[_backend_count]);
+            _backend_count++;
+            
 #if HAL_WITH_UAVCAN
+        // Check for UAVCAN EFI
         } else if (_type[i] == EFI_COMMUNICATION_TYPE_UAVCAN) {
             hal.console->printf("AP_EFI: Starting UAVCAN backend\n");
             _backends[_backend_count] = new AP_EFI_UAVCAN(_state[_backend_count], _uavcan_node_id[_backend_count]);
             _backend_count++;
 #endif //HAL_WITH_UAVCAN
-        } else {
-            return false;
-        }
+        }    
     }
-    return true;
 }
 
 // Ask all backends to update the frontend

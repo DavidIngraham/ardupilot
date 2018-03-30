@@ -31,10 +31,10 @@
  * 
  *
  *
- * Author: Sriram Sami
+ * Authors: Sriram Sami and David Ingraham
  * With direction from Andrew Tridgell, Robert Lefebvre, Francisco Ferreira and
  * Pavel Kirienko.
- * Also with thanks to the engineering team at Yonah.
+ * Thanks to Yonah, SpektreWorks Inc, and HFE International.
  */
 
 class AP_EFI {
@@ -45,10 +45,12 @@ public:
     AP_EFI();
 
     // Initializes backends based on parameters
-    bool init();
+    void init();
 
     // Requests all backends to update the frontend. Should be called at 10Hz.
     void update();
+    
+    uint8_t num_instances() const { return _backend_count; };
 
     // Returns full state of a particular backend instance
     EFI_State* get_state(uint8_t instance) { return &_state[instance]; };
@@ -62,7 +64,7 @@ public:
     enum EFI_Communication_Type {
         EFI_COMMUNICATION_TYPE_NONE   = 0,
         EFI_COMMUNICATION_TYPE_UAVCAN = 1,
-        EFI_COMMUNICATION_TYPE_SERIAL = 2
+        EFI_COMMUNICATION_TYPE_SERIAL_MS = 2
     };
 
 private:
