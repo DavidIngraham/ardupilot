@@ -207,6 +207,11 @@ void Plane::init_ardupilot()
     g2.gripper.init();
 #endif
 
+// init EFI monitoring
+#if EFI_ENABLED == ENABLED
+    g2.efi.init();
+#endif
+
     // disable safety if requested
     BoardConfig.init_safety();
 }

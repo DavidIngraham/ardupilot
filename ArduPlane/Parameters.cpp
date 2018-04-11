@@ -1177,6 +1177,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
 #endif
 
+#if EFI_ENABLED == ENABLED
+    // @Group: EFI_
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    AP_SUBGROUPINFO(efi, "EFI", 13, ParametersG2, AP_EFI),
+#endif
+
     AP_GROUPEND
 };
 

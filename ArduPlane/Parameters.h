@@ -550,6 +550,8 @@ public:
     AP_Gripper gripper;
 #endif
 
+    AP_EFI efi;
+
 };
 
 extern const AP_Param::Info var_info[];

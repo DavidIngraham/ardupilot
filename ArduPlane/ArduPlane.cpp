@@ -89,6 +89,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper, &plane.g2.gripper, update, 10, 75),
 #endif
+#if EFI_ENABLED == ENABLED
+    SCHED_TASK(efi_update,           10,    200)
+#endif
 };
 
 constexpr int8_t Plane::_failsafe_priorities[5];
@@ -369,6 +372,11 @@ void Plane::ins_periodic(void)
 void Plane::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
+}
+
+void Plane::efi_update(void)
+{
+    g2.efi.update();
 }
 
 /*

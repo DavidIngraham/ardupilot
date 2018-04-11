@@ -791,6 +791,7 @@ private:
     void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
+    void send_efi_status(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
@@ -933,6 +934,7 @@ private:
     void zero_airspeed(bool in_startup);
     void read_receiver_rssi(void);
     void rpm_update(void);
+    void efi_update(void);
     void button_update(void);
     void stats_update();
     void ice_update(void);
@@ -1049,6 +1051,7 @@ private:
     void init_capabilities(void);
     void ins_periodic();
     void dataflash_periodic(void);
+    void update_efi(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
