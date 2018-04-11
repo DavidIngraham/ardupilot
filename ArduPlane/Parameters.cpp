@@ -1184,6 +1184,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_RCMASK", 10, ParametersG2, manual_rc_mask, 0),
     
+#if EFI_ENABLED == ENABLED
+    // @Group: EFI_
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    AP_SUBGROUPINFO(efi, "EFI", 13, ParametersG2, AP_EFI),
+#endif    
+    
     AP_GROUPEND
 };
 

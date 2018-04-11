@@ -83,6 +83,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(avoidance_adsb_update,  10,    100),
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
+#if EFI_ENABLED == ENABLED
+    SCHED_TASK(efi_update,             10,    200)
+#endif
 };
 
 /*
@@ -406,10 +409,19 @@ void Plane::terrain_update(void)
 #endif
 }
 
-
 void Plane::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
+}
+
+void Plane::efi_update(void)
+{
+#if EFI_ENABLED == ENABLED
+    g2.efi.update();
+    if (should_log(MASK_LOG_RC)) {
+        DataFlash.Log_Write_EFI(g2.efi);
+    }
+#endif
 }
 
 /*

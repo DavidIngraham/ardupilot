@@ -818,6 +818,7 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
+    void send_efi_status(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
@@ -961,6 +962,7 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void rpm_update(void);
+    void efi_update(void);
     void button_update(void);
     void stats_update();
     void ice_update(void);
