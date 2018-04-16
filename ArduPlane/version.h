@@ -2,7 +2,7 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "ArduPlane V3.8.5"
+#define THISFIRMWARE "ArduPlane C20 3.8.5EFI"
 #define FIRMWARE_VERSION 3,8,5,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 #ifndef GIT_VERSION
