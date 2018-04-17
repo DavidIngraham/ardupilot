@@ -918,8 +918,10 @@ private:
     bool throw_position_good();
 
     bool rtl_init(bool ignore_checks);
+    bool dynamic_rtl_init(bool ignore_checks);
     void rtl_restart_without_terrain();
     void rtl_run();
+    void dynamic_rtl_run();
     void rtl_climb_start();
     void rtl_return_start();
     void rtl_climb_return_run();

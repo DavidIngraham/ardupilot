@@ -118,6 +118,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
+        case DYNAMIC_RTL:
+            success = dynamic_rtl_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -259,6 +263,10 @@ void Copter::update_flight_mode()
             guided_nogps_run();
             break;
 
+        case DYNAMIC_RTL:
+            dynamic_rtl_run();
+            break;
+
         default:
             break;
     }
@@ -326,6 +334,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case BRAKE:
         case AVOID_ADSB:
         case THROW:
+        case DYNAMIC_RTL:
             return true;
         default:
             return false;
@@ -367,6 +376,7 @@ void Copter::notify_flight_mode(control_mode_t mode)
         case AVOID_ADSB:
         case GUIDED_NOGPS:
         case LAND:
+        case DYNAMIC_RTL:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
@@ -431,6 +441,9 @@ void Copter::notify_flight_mode(control_mode_t mode)
             break;
         case GUIDED_NOGPS:
             notify.set_flight_mode_str("GNGP");
+            break;
+        case DYNAMIC_RTL:
+            notify.set_flight_mode_str("DRTL");
             break;
         default:
             notify.set_flight_mode_str("----");
@@ -498,6 +511,8 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case GUIDED_NOGPS:
         port->printf("GUIDED_NOGPS");
         break;
+    case DYNAMIC_RTL:
+        port->printf("DYNAMIC_RTL");
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;
