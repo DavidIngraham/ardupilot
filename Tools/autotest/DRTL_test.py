@@ -32,10 +32,10 @@ def wait_heartbeat(m):
 
 if __name__ == "__main__":
 
-	master = mavutil.mavlink_connection('tcp:127.0.0.1:14551', SYSID_OUT, COMPID_OUT)
+	master = mavutil.mavlink_connection('udp:127.0.0.1:14551', SYSID_OUT, COMPID_OUT)
 
 	# wait for the heartbeat msg to find the system ID
-	#wait_heartbeat(master)
+	wait_heartbeat(master)
 
 	last_update = 0
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 	while True:
 		if (time.time() - last_update) > UPDATE_PERIOD:
 
-			lat += math.sin(counter/10)/100
+			lat += math.sin(counter/10)/10000
 
 			print(lat)
 
