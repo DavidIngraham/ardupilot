@@ -82,12 +82,6 @@ void Copter::dynamic_rtl_run()
 // handle mavlink MSG_ID_GLOBAL_POSITION_INT messages
 void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
 {
-    gcs_send_text(MAV_SEVERITY_INFO,"Updating DRTL Position");
-    // exit immediatley if we're not in DYNAMIC_RTL mode
-    //if (control_mode != DYNAMIC_RTL) {
-    	//return; 
-    //} Just kidding - We want to log this all the time for now
-
     // skip our own messages
     if (msg->sysid == mavlink_system.sysid) {
         return;
@@ -96,9 +90,8 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
     // skip message if not from our target
     if (msg->sysid != g2.drtl_sysid_to_target) {
         gcs_send_text_fmt(MAV_SEVERITY_INFO,"DRTL SYSID Invalid %u %u", (unsigned)msg->sysid, (unsigned)g2.drtl_sysid_to_target);
-        //return;
+        return;
     }
-    gcs_send_text(MAV_SEVERITY_INFO,"DRTL SYSID Valid");
 
     // decode global-position-int message
     if (msg->msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
@@ -129,10 +122,11 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
 
 
         if ((AP_HAL::millis() - drtl_last_location_sent_to_gcs > AP_GCS_INTERVAL_MS)) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "DRTL: %u %ld %ld %4.2f\n",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "DRTL: %ld %u %ld %ld %ld\n",
+                            (double)packet.time_boot_ms,
                             (unsigned)msg->sysid,
-                            (long)drtl_target_location.lat,
-                            (long)drtl_target_location.lng,
+                            (double)drtl_target_location.lat,
+                            (double)drtl_target_location.lng,
                             (double)(drtl_target_location.alt * 0.01f));    // cm to m
             drtl_last_location_sent_to_gcs = now;
         }
