@@ -945,7 +945,7 @@ private:
     void dynamic_rtl_build_path(bool terrain_following_allowed);
     void dynamic_rtl_compute_return_target(bool terrain_following_allowed);
     void dynamic_rtl_handle_msg(mavlink_message_t *msg);
-    bool dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
 
     bool sport_init(bool ignore_checks);
     void sport_run();

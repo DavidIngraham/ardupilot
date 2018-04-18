@@ -82,7 +82,7 @@ void Copter::dynamic_rtl_run()
 // handle mavlink MSG_ID_GLOBAL_POSITION_INT messages
 void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
 {
-
+    gcs_send_text(MAV_SEVERITY_INFO,"Updating DRTL Position");
     // exit immediatley if we're not in DYNAMIC_RTL mode
     //if (control_mode != DYNAMIC_RTL) {
     	//return; 
@@ -95,18 +95,15 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
 
     // skip message if not from our target
     if (msg->sysid != g2.drtl_sysid_to_target) {
-        return;
+        gcs_send_text_fmt(MAV_SEVERITY_INFO,"DRTL SYSID Invalid %u %u", (unsigned)msg->sysid, (unsigned)g2.drtl_sysid_to_target);
+        //return;
     }
+    gcs_send_text(MAV_SEVERITY_INFO,"DRTL SYSID Valid");
 
     // decode global-position-int message
     if (msg->msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
 
         const uint32_t now = AP_HAL::millis();
-
-        // get estimated location and velocity (for logging)
-        Location loc_estimate{};
-        Vector3f vel_estimate;
-        UNUSED_RESULT(dynamic_rtl_get_target_location_and_velocity(loc_estimate, vel_estimate));
 
         // decode message
         mavlink_global_position_int_t packet;
@@ -129,40 +126,26 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
             drtl_last_heading_update_ms = now;
         }
 
+
+
         if ((AP_HAL::millis() - drtl_last_location_sent_to_gcs > AP_GCS_INTERVAL_MS)) {
             gcs_send_text_fmt(MAV_SEVERITY_INFO, "DRTL: %u %ld %ld %4.2f\n",
-                            (unsigned)g2.drtl_sysid_to_target,
+                            (unsigned)msg->sysid,
                             (long)drtl_target_location.lat,
                             (long)drtl_target_location.lng,
                             (double)(drtl_target_location.alt * 0.01f));    // cm to m
+            drtl_last_location_sent_to_gcs = now;
         }
-
-        // log lead's estimated vs reported position
-        DataFlash_Class::instance()->Log_Write("DRTL",
-                                               "TimeUS,Lat,Lon,Alt,VelX,VelY,VelZ,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               drtl_target_location.lat,
-                                               drtl_target_location.lng,
-                                               drtl_target_location.alt,
-                                               (double)drtl_target_velocity_ned.x,
-                                               (double)drtl_target_velocity_ned.y,
-                                               (double)drtl_target_velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
     }
 }
 
 // get target's estimated location
-bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
 
     // check for timeout
-    if ((drtl_last_location_update_ms == 0) || (AP_HAL::millis() - drtl_last_location_update_ms > DYNAMIC_RTL_TIMEOUT_MS)) {
+    if ((drtl_last_location_update_ms == 0) || ((AP_HAL::millis() - drtl_last_location_update_ms) > DYNAMIC_RTL_TIMEOUT_MS)) {
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "drtl timestamps %u %u \n", (unsigned)drtl_last_location_update_ms, (unsigned)AP_HAL::millis());
         return false;
     }
 
@@ -207,7 +190,6 @@ void Copter::dynamic_rtl_build_path(bool terrain_following_allowed)
 //   return target's altitude is updated to a higher altitude that the vehicle can safely return at (frame may also be set)
 void Copter::dynamic_rtl_compute_return_target(bool terrain_following_allowed)
 {
-	gcs_send_text(MAV_SEVERITY_INFO,"Whoops...");
 	Location target_location;
 	Vector3f target_velocity;
 
@@ -216,6 +198,7 @@ void Copter::dynamic_rtl_compute_return_target(bool terrain_following_allowed)
 	} else {
 		// abort if we don't have an updated position from the target
 		set_mode(LOITER, MODE_REASON_INVALID_TARGET);
+        gcs_send_text(MAV_SEVERITY_INFO, "DRTL abort: target invalid");
 		return;
 	}
 
