@@ -1004,6 +1004,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO", 18, ParametersG2, AP_VisualOdom),
 #endif
 
+    // @Param: DRTL_SYSID
+    // @DisplayName: Dynamic RTL System ID to target
+    // @Description: MAVLink SYSID to target in dynamic RTL mode
+    // @User: Standard
+    AP_GROUPINFO("DRTL_SYSID", 19, ParametersG2, drtl_sysid_to_target, 0),
+
+
     AP_GROUPEND
 };
 

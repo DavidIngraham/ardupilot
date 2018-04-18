@@ -569,6 +569,8 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+    AP_Int16 drtl_sysid_to_target;
 };
 
 extern const AP_Param::Info        var_info[];

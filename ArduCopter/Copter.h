@@ -391,6 +391,14 @@ private:
         bool terrain_used;
     } rtl_path;
 
+    // Dynamic RTL
+    Location drtl_target_location;
+    Vector3f drtl_target_velocity_ned;
+    float drtl_target_heading;
+    uint32_t drtl_last_location_update_ms;
+    uint32_t drtl_last_heading_update_ms;
+    uint32_t drtl_last_location_sent_to_gcs;
+
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
 
@@ -918,10 +926,8 @@ private:
     bool throw_position_good();
 
     bool rtl_init(bool ignore_checks);
-    bool dynamic_rtl_init(bool ignore_checks);
     void rtl_restart_without_terrain();
     void rtl_run();
-    void dynamic_rtl_run();
     void rtl_climb_start();
     void rtl_return_start();
     void rtl_climb_return_run();
@@ -933,6 +939,12 @@ private:
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
     void rtl_compute_return_target(bool terrain_following_allowed);
+
+    bool dynamic_rtl_init(bool ignore_checks);
+    void dynamic_rtl_run();
+    void dynamic_rtl_handle_msg(mavlink_message_t *msg);
+    bool dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
