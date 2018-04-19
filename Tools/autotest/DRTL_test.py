@@ -45,18 +45,18 @@ if __name__ == "__main__":
 	while True:
 		if (time.time()*1000 - last_update) > UPDATE_PERIOD:
 
-			lat = lat_origin + math.sin(counter/100)/10000 # move up and down the cmac runway
-			lng = lng_origin
+			lat = lat_origin 
+			lng = lng_origin + 0.0000000001*counter#math.sin(counter/10)/10000 # move perpendicular the cmac runway
 			alt = alt_origin
 
-			print(int(time.time()*1000))
 
 			if (counter % (1000/UPDATE_PERIOD) == 0): # send heartbeat at 1 Hz
 				master.mav.heartbeat_send(31,3,0,0,4,2)
+				print(lng)
 			master.mav.global_position_int_send(int(time.time()*1000-start_time), lat*1E7, lng*1E7, alt*1000, 0, 0, 0, 0, 0)
 
 			counter += 1
-			last_update = time.time()
+			last_update = time.time()*1000
 
 
 
