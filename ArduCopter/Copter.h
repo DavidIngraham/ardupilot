@@ -942,10 +942,14 @@ private:
 
     bool dynamic_rtl_init(bool ignore_checks);
     void dynamic_rtl_run();
-    void dynamic_rtl_build_path(bool terrain_following_allowed);
+    void dynamic_rtl_build_climb_path(bool terrain_following_allowed);
     void dynamic_rtl_compute_return_target(bool terrain_following_allowed);
     void dynamic_rtl_handle_msg(mavlink_message_t *msg);
     bool dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
+    void dynamic_rtl_update_return_target();
+    void dynamic_rtl_climb_return_run();
+    void dynamic_rtl_loiterathome_start();
+    void dynamic_rtl_loiterathome_run();
 
     bool sport_init(bool ignore_checks);
     void sport_run();

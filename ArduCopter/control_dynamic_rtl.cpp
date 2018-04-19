@@ -8,7 +8,6 @@
  * and the lower implementation of the waypoint or landing controllers within those states
  */
 
-#define AP_GCS_INTERVAL_MS 1000 // Debug prints to GCS interval
 #define DYNAMIC_RTL_TIMEOUT_MS 3000 // Timeout value to mark target position as invalid
 
 // rtl_init - initialise rtl controller
@@ -17,8 +16,9 @@ bool Copter::dynamic_rtl_init(bool ignore_checks)
     if (position_ok() || ignore_checks) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
-        dynamic_rtl_build_path(!failsafe.terrain);
+        dynamic_rtl_build_climb_path(!failsafe.terrain);
         rtl_climb_start();
+        gcs_send_text(MAV_SEVERITY_INFO, "DRTL: Climb Start");
         return true;
     }else{
         return false;
@@ -34,39 +34,34 @@ void Copter::dynamic_rtl_run()
         switch (rtl_state) {
         case RTL_InitialClimb:
             rtl_return_start();
+            gcs_send_text(MAV_SEVERITY_INFO, "DRTL: Return Start");
             break;
         case RTL_ReturnHome:
-            rtl_loiterathome_start();
+            dynamic_rtl_loiterathome_start();
+            gcs_send_text(MAV_SEVERITY_INFO, "DRTL: Loiter Start");
             break;
         case RTL_LoiterAtHome:
-            if (rtl_path.land || failsafe.radio) {
-                rtl_land_start();
-            }else{
-                rtl_descent_start();
-            }
+            rtl_descent_start();
+            gcs_send_text(MAV_SEVERITY_INFO, "DRTL: Descent Start");
             break;
         case RTL_FinalDescent:
             // do nothing
             break;
         case RTL_Land:
-            // do nothing - rtl_land_run will take care of disarming motors
+            //not relevant for dynamic_rtl
             break;
         }
     }
 
     // call the correct run function
     switch (rtl_state) {
-
     case RTL_InitialClimb:
-        rtl_climb_return_run();
-        break;
-
     case RTL_ReturnHome:
-        rtl_climb_return_run();
+        dynamic_rtl_climb_return_run();
         break;
 
     case RTL_LoiterAtHome:
-        rtl_loiterathome_run();
+        dynamic_rtl_loiterathome_run();
         break;
 
     case RTL_FinalDescent:
@@ -74,7 +69,7 @@ void Copter::dynamic_rtl_run()
         break;
 
     case RTL_Land:
-        rtl_land_run();
+        //not relevant for dynamic_rtl
         break;
     }
 }
@@ -118,18 +113,6 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
             drtl_target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             drtl_last_heading_update_ms = now;
         }
-
-
-
-        if ((AP_HAL::millis() - drtl_last_location_sent_to_gcs > AP_GCS_INTERVAL_MS)) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "DRTL: %ld %u %ld %ld %ld\n",
-                            (double)packet.time_boot_ms,
-                            (unsigned)msg->sysid,
-                            (double)drtl_target_location.lat,
-                            (double)drtl_target_location.lng,
-                            (double)(drtl_target_location.alt * 0.01f));    // cm to m
-            drtl_last_location_sent_to_gcs = now;
-        }
     }
 }
 
@@ -157,7 +140,7 @@ bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3
 }
 
 
-void Copter::dynamic_rtl_build_path(bool terrain_following_allowed)
+void Copter::dynamic_rtl_build_climb_path(bool terrain_following_allowed)
 {
     // origin point is our stopping point
     Vector3f stopping_point;
@@ -166,17 +149,12 @@ void Copter::dynamic_rtl_build_path(bool terrain_following_allowed)
     rtl_path.origin_point = Location_Class(stopping_point);
     rtl_path.origin_point.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
 
-    // compute return target
+    // compute return target, paying special attention to choosing the correct return path altitude
     dynamic_rtl_compute_return_target(terrain_following_allowed);
 
     // climb target is above our origin point at the return altitude
     rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
 
-    // descent target is below return target at rtl_alt_final
-    rtl_path.descent_target = Location_Class(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location_Class::ALT_FRAME_ABOVE_HOME);
-
-    // set land flag
-    rtl_path.land = g.rtl_alt_final <= 0;
 }
 
 // compute the return target - home or rally point
@@ -199,27 +177,13 @@ void Copter::dynamic_rtl_compute_return_target(bool terrain_following_allowed)
     // curr_alt is current altitude above home or above terrain depending upon use_terrain
     int32_t curr_alt = current_loc.alt;
 
-    // decide if we should use terrain altitudes
-    rtl_path.terrain_used = terrain_use() && terrain_following_allowed;
-    if (rtl_path.terrain_used) {
-        // attempt to retrieve terrain alt for current location, stopping point and origin
-        int32_t origin_terr_alt, return_target_terr_alt;
-        if (!rtl_path.origin_point.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
-            !rtl_path.return_target.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
-            !current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_alt)) {
-            rtl_path.terrain_used = false;
-            Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
-        }
-    }
-
     // convert return-target alt (which is an absolute alt) to alt-above-home or alt-above-terrain
-    if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_TERRAIN)) {
-        if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
-            // this should never happen but just in case
-            rtl_path.return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
-        }
-        rtl_path.terrain_used = false;
+    if (!rtl_path.return_target.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME)) {
+        // this should never happen but just in case
+        rtl_path.return_target.set_alt_cm(0, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
+    rtl_path.terrain_used = false;
+    
 
     // set new target altitude to return target altitude
     // Note: this is alt-above-home or terrain-alt depending upon use_terrain
@@ -227,7 +191,7 @@ void Copter::dynamic_rtl_compute_return_target(bool terrain_following_allowed)
     int32_t target_alt = MAX(rtl_path.return_target.alt, 0);
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
-    target_alt = MAX(target_alt, curr_alt + MAX(0, g.rtl_climb_min));
+    // TODO - deal with this target_alt = MAX(target_alt, curr_alt + MAX(0, g.rtl_climb_min));
     target_alt = MAX(target_alt, MAX(g.rtl_altitude, RTL_ALT_MIN));
 
     // reduce climb if close to return target
@@ -261,3 +225,147 @@ void Copter::dynamic_rtl_compute_return_target(bool terrain_following_allowed)
     // ensure we do not descend
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }
+
+
+void Copter::dynamic_rtl_update_return_target()
+{
+    uint32_t old_target_alt = rtl_path.return_target.alt;
+    Location target_location;
+    Vector3f target_velocity;
+
+    if (dynamic_rtl_get_target_location_and_velocity(target_location, target_velocity)) {
+        rtl_path.return_target = target_location;
+    } else {
+        // abort if we don't have an updated position from the target
+        set_mode(LOITER, MODE_REASON_INVALID_TARGET);
+        gcs_send_text(MAV_SEVERITY_INFO, "DRTL abort: target invalid");
+        return;
+    }
+    // Preserve the old target alt. We don't deal with changing alt targets yet
+    rtl_path.return_target.set_alt_cm(old_target_alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+
+    rtl_path.descent_target = Location_Class(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location_Class::ALT_FRAME_ABOVE_HOME);
+
+}
+
+// rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
+//      called by rtl_run at 100hz or more
+void Copter::dynamic_rtl_climb_return_run()
+{
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control->set_throttle_out(0,false,g.throttle_filt);
+#else
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
+        // reset attitude control targets
+        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        // To-Do: re-initialise wpnav targets
+        return;
+    }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+    // After initial climb, constantly update return point
+    if (rtl_state == RTL_ReturnHome) {
+        dynamic_rtl_update_return_target();
+        wp_nav->set_wp_destination(rtl_path.return_target);
+    }
+
+    // run waypoint controller
+    failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    if (auto_yaw_mode == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+    }else{
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true, get_smoothing_gain());
+    }
+
+    // check if we've completed this stage of RTL 
+    rtl_state_complete = wp_nav->reached_wp_destination();
+}
+
+// rtl_loiterathome_start - initialise return to home
+void Copter::dynamic_rtl_loiterathome_start()
+{
+    rtl_state = RTL_LoiterAtHome;
+    rtl_state_complete = false;
+    rtl_loiter_start_time = millis();
+}
+
+// rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
+//      called by rtl_run at 100hz or more
+void Copter::dynamic_rtl_loiterathome_run()
+{
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control->set_throttle_out(0,false,g.throttle_filt);
+#else
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        // multicopters do not stabilize roll/pitch/yaw when disarmed
+        // reset attitude control targets
+        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        // To-Do: re-initialise wpnav targets
+        return;
+    }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+    // update target
+    dynamic_rtl_update_return_target();
+    wp_nav->set_wp_destination(rtl_path.return_target);
+
+    // run waypoint controller
+    failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+
+
+    // check if we've completed this stage of RTL
+    if ((millis() - rtl_loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
+        // we have loitered long enough
+        rtl_state_complete = true;
+    }
+}
+
