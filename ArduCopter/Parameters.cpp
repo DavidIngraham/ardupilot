@@ -1010,6 +1010,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DRTL_SYSID", 19, ParametersG2, drtl_sysid_to_target, 0),
 
+    // @Param: DRTL_KP
+    // @DisplayName: Dynamic RTL position controller P gain
+    // @Description: P gain used to correct for position errors in DRTL mode
+    // @User: Standard
+    AP_GROUPINFO("DRTL_KP", 20, ParametersG2, drtl_kp, 0.1f),
+
 
     AP_GROUPEND
 };

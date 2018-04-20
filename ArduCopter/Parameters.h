@@ -571,6 +571,8 @@ public:
     SRV_Channels servo_channels;
 
     AP_Int16 drtl_sysid_to_target;
+
+    AP_Float drtl_kp;
 };
 
 extern const AP_Param::Info        var_info[];

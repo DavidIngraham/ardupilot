@@ -10,7 +10,7 @@
 
 #define DYNAMIC_RTL_TIMEOUT_MS 3000 // Timeout value to mark target position as invalid
 #define DYNAMIC_RTL_DIST_MAX 5000 // Don't attempt to land more than 5km away
-#define DRTL_GAIN_kP 0.5f // make this a parameter eventually
+#define DRTL_LATENCY_FUDGE_FACTOR 0.0f
 
 // rtl_init - initialise rtl controller
 bool Copter::dynamic_rtl_init(bool ignore_checks)
@@ -96,7 +96,6 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
     // decode global-position-int message
     if (msg->msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
 
-        gcs_send_text(MAV_SEVERITY_INFO, "DRTL: Received position");
         const uint32_t now = AP_HAL::millis();
 
         // decode message
@@ -128,15 +127,15 @@ bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3
 
     // check for timeout
     if ((drtl_last_location_update_ms == 0) || ((AP_HAL::millis() - drtl_last_location_update_ms) > DYNAMIC_RTL_TIMEOUT_MS)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "drtl timestamps %u %u \n", (unsigned)drtl_last_location_update_ms, (unsigned)AP_HAL::millis());
         return false;
     }
 
     // calculate time since last actual position update
-    const float dt = (AP_HAL::millis() - drtl_last_location_update_ms) * 0.001f;
+    const float dt = (AP_HAL::millis() - drtl_last_location_update_ms) * 0.001f + DRTL_LATENCY_FUDGE_FACTOR;
 
     // project the vehicle position
     Location last_loc = drtl_target_location;
+
     location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 10.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
@@ -370,8 +369,8 @@ void Copter::dynamic_rtl_return_run()
         const Vector3f dist_vec_neu(dist_vec.x * 100.0f, dist_vec.y * 100.0f, 0.0f);
 
         // Calculate Desired velocity with P controller. Maintain level flight during return phase
-        desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_neu.x * DRTL_GAIN_kP);
-        desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f) + (dist_vec_neu.y * DRTL_GAIN_kP);
+        desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_neu.x * g2.drtl_kp);
+        desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f) + (dist_vec_neu.y * g2.drtl_kp);
         desired_velocity_neu_cms.z = 0;
 
          // scale desired velocity to stay within horizontal speed limit
