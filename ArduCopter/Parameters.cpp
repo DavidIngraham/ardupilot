@@ -1015,6 +1015,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: P gain used to correct for position errors in DRTL mode
     // @User: Standard
     AP_GROUPINFO("DRTL_KP", 20, ParametersG2, drtl_kp, 0.1f),
+    
+    // @Param: DRTL_RADIUS_CM
+    // @DisplayName: Dynamic RTL Radius to begin descent
+    // @Description: Minimum radius for DRTL to begin the descent phase
+    // @User: Standard
+    AP_GROUPINFO("DRTL_RADIUS_CM", 21, ParametersG2, drtl_radius_cm, 100),
 
 
     AP_GROUPEND

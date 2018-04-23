@@ -573,6 +573,9 @@ public:
     AP_Int16 drtl_sysid_to_target;
 
     AP_Float drtl_kp;
+    
+    AP_Int8 drtl_radius_cm;
+    
 };
 
 extern const AP_Param::Info        var_info[];

@@ -11,7 +11,6 @@
 #define DYNAMIC_RTL_TIMEOUT_MS 3000 // Timeout value to mark target position as invalid
 #define DYNAMIC_RTL_DIST_MAX 5000 // Don't attempt to land more than 5km away
 #define DRTL_LATENCY_FUDGE_FACTOR 0.0f
-#define DRTL_DESCENT_THRESHOLD 100 // descent XY disntance threshold - cm
 
 // rtl_init - initialise rtl controller
 bool Copter::dynamic_rtl_init(bool ignore_checks)
@@ -479,7 +478,7 @@ void Copter::dynamic_rtl_loiterathome_run()
         guided_run();
         
         
-        if (norm(dist_vec_neu.x, dist_vec_neu.y) < DRTL_DESCENT_THRESHOLD) {
+        if (norm(dist_vec_neu.x, dist_vec_neu.y) < g2.drtl_radius_cm) {
             loiter_counter++;
         } else {
             loiter_counter = 0;
