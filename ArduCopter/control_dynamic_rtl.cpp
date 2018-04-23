@@ -11,6 +11,7 @@
 #define DYNAMIC_RTL_TIMEOUT_MS 3000 // Timeout value to mark target position as invalid
 #define DYNAMIC_RTL_DIST_MAX 5000 // Don't attempt to land more than 5km away
 #define DRTL_LATENCY_FUDGE_FACTOR 0.0f
+#define DRTL_DESCENT_THRESHOLD 100 // descent XY disntance threshold - cm
 
 // rtl_init - initialise rtl controller
 bool Copter::dynamic_rtl_init(bool ignore_checks)
@@ -133,14 +134,34 @@ bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3
     // calculate time since last actual position update
     const float dt = (AP_HAL::millis() - drtl_last_location_update_ms) * 0.001f + DRTL_LATENCY_FUDGE_FACTOR;
 
+    // Update the velocity vector
+    vel_ned = drtl_target_velocity_ned;
+    
     // project the vehicle position
     Location last_loc = drtl_target_location;
+    
 
     location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 10.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
     // return latest position estimate
     loc = last_loc;
+    
+    // log lead's estimated vs reported position
+    DataFlash_Class::instance()->Log_Write("DRTL",
+                                          "TimeUS,Lat,Lon,Alt,VelX,VelY,VelZ,LatE,LonE,AltE",  // labels
+                                          "QLLifffLLi",    // fmt
+                                          AP_HAL::micros64(),
+                                          drtl_target_location.lat,
+                                          drtl_target_location.lng,
+                                          drtl_target_location.alt,
+                                          (double)drtl_target_velocity_ned.x,
+                                          (double)drtl_target_velocity_ned.y,
+                                          (double)drtl_target_velocity_ned.z,
+                                          loc.lat,
+                                          loc.lng,
+                                          loc.alt
+                                                    );
     return true;
 }
 
@@ -374,15 +395,19 @@ void Copter::dynamic_rtl_return_run()
         desired_velocity_neu_cms.z = 0;
 
          // scale desired velocity to stay within horizontal speed limit
-        float desired_speed_xy = safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y));
+        float desired_speed_xy = norm(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y);
         if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_speed_xy())) {
             const float scalar_xy = pos_control->get_speed_xy() / desired_speed_xy;
             desired_velocity_neu_cms.x *= scalar_xy;
             desired_velocity_neu_cms.y *= scalar_xy;
             desired_speed_xy = pos_control->get_speed_xy();
         }
-
-
+        
+        guided_set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false);
+        // Run Guided's Velocity controller
+        guided_run();
+        
+        rtl_state_complete = norm(dist_vec_neu.x, dist_vec_neu.y) < wp_nav->get_wp_radius_cm();
 
     } else {
         // Figure out how to handle this more gracefully
@@ -392,12 +417,6 @@ void Copter::dynamic_rtl_return_run()
         gcs_send_text(MAV_SEVERITY_INFO, "DRTL abort: target too far");
         return;
     }
-
-
-    guided_set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false);
-    // Run Guided's Vvelocity controller
-    guided_run();
-
 }
 
 // rtl_loiterathome_start - initialise return to home
@@ -408,7 +427,7 @@ void Copter::dynamic_rtl_loiterathome_start()
     rtl_loiter_start_time = millis();
 }
 
-// rtl_climb_return_descent_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
+// rtl_climb_return_descent_run - ensures vehicle is locked on to target before descent
 //      called by rtl_run at 100hz or more
 void Copter::dynamic_rtl_loiterathome_run()
 {
@@ -428,38 +447,58 @@ void Copter::dynamic_rtl_loiterathome_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+    Vector3f desired_velocity_neu_cms;
+    bool use_yaw = false;
+    float yaw_cd = 0.0f;
+
+    Vector3f dist_vec;  // vector to target
+    Vector3f vel_of_target;  // velocity of lead vehicle
+    
+    static uint16_t loiter_counter = 0;
+
+    if (dynamic_rtl_get_target_dist_and_vel(dist_vec, vel_of_target)) {
+         // convert dist_vec to cm in NEU
+        const Vector3f dist_vec_neu(dist_vec.x * 100.0f, dist_vec.y * 100.0f, 0.0f);
+
+        // Calculate Desired velocity with P controller. Maintain level flight during return phase
+        desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_neu.x * g2.drtl_kp);
+        desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f) + (dist_vec_neu.y * g2.drtl_kp);
+        desired_velocity_neu_cms.z = 0;
+
+         // scale desired velocity to stay within horizontal speed limit
+        float desired_speed_xy = norm(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y);
+        if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_speed_xy())) {
+            const float scalar_xy = pos_control->get_speed_xy() / desired_speed_xy;
+            desired_velocity_neu_cms.x *= scalar_xy;
+            desired_velocity_neu_cms.y *= scalar_xy;
+            desired_speed_xy = pos_control->get_speed_xy();
         }
+        
+        guided_set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false);
+        // Run Guided's Velocity controller
+        guided_run();
+        
+        
+        if (norm(dist_vec_neu.x, dist_vec_neu.y) < DRTL_DESCENT_THRESHOLD) {
+            loiter_counter++;
+        } else {
+            loiter_counter = 0;
+        }
+        
+
+    } else {
+        // Figure out how to handle this more gracefully
+
+        // abort if we don't have an updated position from the target
+        set_mode(LOITER, MODE_REASON_INVALID_TARGET);
+        gcs_send_text(MAV_SEVERITY_INFO, "DRTL abort: target too far");
+        return;
     }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // update target
-    dynamic_rtl_update_return_target();
-    wp_nav->set_wp_destination(rtl_path.return_target);
-
-    // run waypoint controller
-    failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();
-
-    // call attitude controller
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
-
-
+    
     // check if we've completed this stage of RTL
-    if ((millis() - rtl_loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
+    if (((loiter_counter * MAIN_LOOP_MICROS)/1000.0f) >= (uint32_t)g.rtl_loiter_time.get()) {
         // we have loitered long enough
         rtl_state_complete = true;
+        loiter_counter = 0;
     }
 }
-
