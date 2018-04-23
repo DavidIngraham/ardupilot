@@ -174,6 +174,9 @@ public:
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
     float get_wp_distance_to_destination() const;
+    
+    /// get_wp_radius_cm -  get the waypoint radius parameter value
+    float get_wp_radius_cm() const { return _wp_radius_cm; }
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
     int32_t get_wp_bearing_to_destination() const;
