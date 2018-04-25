@@ -437,8 +437,6 @@ void Copter::dynamic_rtl_descent_start()
 //      called by rtl_run at 100hz or more
 void Copter::dynamic_rtl_descent_run()
 {
-    int16_t roll_control = 0, pitch_control = 0;
-    float target_yaw_rate = 0;
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -477,10 +475,12 @@ void Copter::dynamic_rtl_descent_run()
 
     Vector3f dist_vec;  // vector to target
     Vector3f vel_of_target;  // velocity of lead vehicle
-
+    
+    static uint16_t preland_counter = 0;
+    
     if (dynamic_rtl_get_target_dist_and_vel(dist_vec, vel_of_target)) {
          // convert dist_vec to cm in NEU, Ignore altitude
-        const Vector3f dist_vec_neu(dist_vec.x * 100.0f, dist_vec.y * 100.0f, -dist_vec.z * 100.0f);
+        const Vector3f dist_vec_neu(dist_vec.x * 100.0f, dist_vec.y * 100.0f, -dist_vec.z * 100.0f + (float)g2.drtl_alt_land_cm);
 
         // Calculate Desired velocity with P controller. 
         desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_neu.x * g2.drtl_kp);
@@ -504,6 +504,16 @@ void Copter::dynamic_rtl_descent_run()
         guided_set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false);
         guided_run();
         
+        // Complete when we are within 10 cm (z) and 1m (xy) of the descent target. 
+        if ((fabs(dist_vec_neu.z) < 10.0f) && (norm(dist_vec_neu.x, dist_vec_neu.y) < 100.0f)) {
+            preland_counter++;
+        } else {
+            preland_counter = 0;
+        }
+        
+        // wait 10 loops
+        rtl_state_complete = (preland_counter > 10); 
+        
     } else {
         // abort if we don't have an updated position from the target
         if (!set_mode(LOITER,  MODE_REASON_INVALID_TARGET)) {
@@ -511,8 +521,4 @@ void Copter::dynamic_rtl_descent_run()
         }
         gcs_send_text(MAV_SEVERITY_INFO, "DRTL abort: target invalid");
     }
-
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Z Error: %f", dist_vec.z);
-    // Complete when we are within 2 meters above the target. 
-    rtl_state_complete = fabs(dist_vec.z) < 3.0; // 2 meters
 }

@@ -1022,7 +1022,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DRTL_RADIUS_CM", 21, ParametersG2, drtl_radius_cm, 100),
 
-
+    // @Param: DRTL_ALT_LAND
+    // @DisplayName: Dynamic RTL final descent target altitude (CM)
+    // @Description: Altitude (relative to target alt) to begin final landing stage of DRTL
+    // @User: Standard
+    AP_GROUPINFO("DRTL_ALT_LAND", 22, ParametersG2, drtl_alt_land_cm, 300),
+    
     AP_GROUPEND
 };
 

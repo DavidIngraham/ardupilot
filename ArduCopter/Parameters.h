@@ -576,6 +576,8 @@ public:
     
     AP_Int8 drtl_radius_cm;
     
+    AP_Int16 drtl_alt_land_cm;
+    
 };
 
 extern const AP_Param::Info        var_info[];
