@@ -392,7 +392,7 @@ private:
     } rtl_path;
 
     // Dynamic RTL
-    Location drtl_target_location;
+    Location_Class drtl_target_location;
     Vector3f drtl_target_velocity_ned;
     float drtl_target_heading;
     uint32_t drtl_last_location_update_ms;
@@ -947,12 +947,12 @@ private:
     void dynamic_rtl_handle_msg(mavlink_message_t *msg);
     bool dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned);
     bool dynamic_rtl_get_target_dist_and_vel(Vector3f &dist_ned, Vector3f &vel_ned);
-    void dynamic_rtl_update_return_target();
     void dynamic_rtl_climb_run();
     void dynamic_rtl_return_start();
     void dynamic_rtl_return_run();
-    void dynamic_rtl_loiterathome_start();
-    void dynamic_rtl_loiterathome_run();
+    void dynamic_rtl_descent_start();
+    void dynamic_rtl_descent_run();
+
 
     bool sport_init(bool ignore_checks);
     void sport_run();
