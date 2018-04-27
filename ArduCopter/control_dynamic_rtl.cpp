@@ -112,7 +112,7 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
         drtl_target_location.set_alt_cm(int32_t(packet.alt/10), Location_Class::ALT_FRAME_ABSOLUTE);   // convert millimeters to cm
         drtl_target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         drtl_target_velocity_ned.y = packet.vy * 0.01f; // velocity east
-        drtl_target_velocity_ned.z = 0; // for now, ignore target velocity changes   packet.vz * 0.01f; // velocity down
+        drtl_target_velocity_ned.z = packet.vz * 0.01f; // velocity down
         drtl_last_location_update_ms = now;
         if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             drtl_target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
@@ -121,7 +121,7 @@ void Copter::dynamic_rtl_handle_msg(mavlink_message_t *msg)
     }
 }
 
-// get target's estimated location
+// get target's estimated location. Lat/Long Absolute, altitude relative to the copters home
 bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3f &vel_ned)
 {
 
@@ -137,10 +137,10 @@ bool Copter::dynamic_rtl_get_target_location_and_velocity(Location &loc, Vector3
     vel_ned = drtl_target_velocity_ned;
     
     // project the vehicle position
-    Location last_loc = drtl_target_location;
+    Location_Class last_loc = drtl_target_location;
     
     // convert altitude frame to above home location (The same frame as current_loc)
-    drtl_target_location.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
+    last_loc.change_alt_frame(Location_Class::ALT_FRAME_ABOVE_HOME);
 
     location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 10.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
