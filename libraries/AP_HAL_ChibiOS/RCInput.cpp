@@ -209,7 +209,7 @@ void RCInput::_timer_tick(void)
  */
 bool RCInput::rc_bind(int dsmMode)
 {
-#if HAL_USE_ICU == TRUE
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     // ask AP_RCProtocol to start a bind
     rcin_prot.start_bind();
 #endif
