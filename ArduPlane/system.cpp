@@ -210,6 +210,11 @@ void Plane::init_ardupilot()
     g2.gripper.init();
 #endif
 
+// init brake controller
+#if BRAKE_ENABLED == ENABLED
+    g2.brake.init(scheduler.get_loop_period_s());
+#endif
+
     // disable safety if requested
     BoardConfig.init_safety();
 }

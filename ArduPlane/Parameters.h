@@ -550,6 +550,15 @@ public:
     AP_Gripper gripper;
 #endif
 
+    // Landing gear brake delay after flare
+    AP_Int16 brake_delay_ms;
+
+#if BRAKE_ENABLED == ENABLED
+    // Brake controller
+    AP_Brake brake;
+#endif
+
+
 };
 
 extern const AP_Param::Info var_info[];

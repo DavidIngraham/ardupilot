@@ -1177,6 +1177,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
 #endif
 
+#if BRAKE_ENABLED == ENABLED
+    // @Group: BRK
+    // @Path: ../libraries/AP_Brake/AP_Brake.cpp
+    AP_SUBGROUPINFO(brake, "BRK", 13, ParametersG2, AP_Brake),
+
+    // @Param: BRK_DELAY_MS
+    // @DisplayName: Braking delay after landing detection
+    // @Description: Delay after a detected landing before the brakes will begin to engage
+    // @Range: 0 5000
+    // @Units: ms
+    AP_GROUPINFO("BRK_DELAY_MS", 14, ParametersG2, brake_delay_ms, 2000),
+#endif
+
     AP_GROUPEND
 };
 

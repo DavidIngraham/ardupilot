@@ -97,6 +97,7 @@
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
+#include <AP_Brake/AP_Brake.h>
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -977,6 +978,7 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
+    void set_servos_brake(void);
     void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);

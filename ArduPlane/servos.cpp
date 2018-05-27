@@ -466,6 +466,54 @@ void Plane::set_servos_flaps(void)
     flaperon_update(auto_flap_percent);
 }
 
+/*
+  Control landing gear brakes
+
+  Braking is activated automatically after a landing is detected.
+  The braking controller will attempt to achieve a fixed acceleration rate.
+  Tune the brake PID controller for a soft reponse to avoid skidding after touchdown
+  
+  TODO: differential braking for steering
+*/
+void Plane::set_servos_brake()
+{
+    if (g2.brake.enabled()) {
+
+        // When active, use constant acceleration setpoint
+        g2.brake.set_command_to_max();
+        
+        // Decide if we should be braking for a landing
+        bool should_brake = false;
+        static uint32_t brake_delay_start_ms = 0;
+        if (is_flying()){
+            // If the vehicle has not yet landed, keep the counter at 0
+            brake_delay_start_ms = 0;
+        } else if (brake_delay_start_ms == 0) {
+            // If the vehicle has just landed, set the timer
+            brake_delay_start_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() >= (brake_delay_start_ms + g2.brake_delay_ms)) {
+            // After the brake delay, enable the brakes
+            should_brake = true;
+        }
+
+        g2.brake.set_active(should_brake);
+
+        
+        // always enable parking brake when disarmed
+        // when locked, brakes output the trim value
+        g2.brake.set_locked(!arming.is_armed());
+        
+
+        /* 
+          Pass AP Brake the raw acceleration from the primary accelerometer
+          Filtering is handled in the PID Contoller
+          Update runs the PID controller, should be called at main loop rate 
+        */
+        Vector3f current_acceleration = ins.get_accel();
+        g2.brake.update(-current_acceleration.x);
+
+    }
+}
 
 /*
   apply vtail and elevon mixers
@@ -580,6 +628,11 @@ void Plane::set_servos(void)
 
     // setup flap outputs
     set_servos_flaps();
+
+    //setup brake outputs
+    #if BRAKE_ENABLED == ENABLED
+        set_servos_brake();
+    #endif
     
     if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
