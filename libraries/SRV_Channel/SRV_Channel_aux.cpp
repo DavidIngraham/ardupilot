@@ -87,6 +87,8 @@ void SRV_Channel::aux_servo_function_setup(void)
     switch (function) {
     case k_flap:
     case k_flap_auto:
+    case k_brake_left:
+    case k_brake_right:
     case k_egg_drop:
         set_range(100);
         break;
