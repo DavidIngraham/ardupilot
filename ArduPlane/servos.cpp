@@ -685,7 +685,8 @@ void Plane::servos_output(void)
     // cope with tailsitters
     quadplane.tailsitter_output();
 
-    // after throttle is updated by all modules, update the reverse flag outputs
+    // after throttle is updated by all modules, update the reverse flag outputs and invert the throttle channel if necessary
+    // Do not adjust throttle channel values after this step
     servo_set_reverse_thrust_flags(SRV_Channel::k_throttle, SRV_Channel::k_throttle_reverse_flag);
     servo_set_reverse_thrust_flags(SRV_Channel::k_throttleLeft, SRV_Channel::k_throttleLeft_reverse_flag);
     servo_set_reverse_thrust_flags(SRV_Channel::k_throttleRight, SRV_Channel::k_throttleRight_reverse_flag);
@@ -727,6 +728,8 @@ void Plane::servo_set_reverse_thrust_flags(SRV_Channel::Aux_servo_function_t thr
         } else {
             // set pwm flag to reverse
             SRV_Channels::set_output_scaled(throttle_rev_flag_func, 100);
+            // change throttle value to absolute value
+            SRV_Channels::set_output_scaled(throttle_func, abs(SRV_Channels::get_output_scaled(throttle_func)));
         }
     }
 }
