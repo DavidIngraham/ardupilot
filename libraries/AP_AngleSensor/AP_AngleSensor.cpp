@@ -27,12 +27,12 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_AngleSensor::var_info[] = {
     // @Group: _
     // @Path: AP_AngleSensor_Params.cpp
-    AP_SUBGROUPINFO(_params[0], "_", 0, AP_AngleSensor, AP_AngleSensor_Params),
+    AP_SUBGROUPINFO(_params[0], "1_", 1, AP_AngleSensor, AP_AngleSensor_Params),
 
     #if ANGLE_SENSOR_MAX_INSTANCES > 1
     // @Group: 2_
     // @Path: AP_AngleSensor_Params.cpp
-    AP_SUBGROUPINFO(_params[1], "2_", 1, AP_AngleSensor, AP_AngleSensor_Params),
+    AP_SUBGROUPINFO(_params[1], "2_", 2, AP_AngleSensor, AP_AngleSensor_Params),
     #endif
     AP_GROUPEND
 };
@@ -88,16 +88,19 @@ void AP_AngleSensor::Log_Write() const
     if (!enabled(0) && !enabled(1)) {
         return;
     }
+    
+    const uint64_t time_us = AP_HAL::micros64();
 
-    struct log_AngleSensor pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ANGLESENSOR_MSG),
-        time_us     : AP_HAL::micros64(),
-        angle_0     : (float)get_angle_radians(0),
-        quality_0   : (uint8_t)get_signal_quality(0),
-        angle_1     : (float)get_angle_radians(1),
-        quality_1   : (uint8_t)get_signal_quality(1),
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    for (uint8_t i=0; i<_num_instances; i++) {
+        struct log_AngleSensor pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_ANGLESENSOR_MSG),
+            time_us     : time_us,
+            instance    : (uint8_t)i
+            angle     : (float)get_angle_radians(i),
+            quality   : (uint8_t)get_signal_quality(i),
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 // check if an instance is healthy

@@ -1,5 +1,5 @@
 /*
- *  RangeFinder test code
+ *   Angle Sensor test code
  */
 
 #include <AP_HAL/AP_HAL.h>
