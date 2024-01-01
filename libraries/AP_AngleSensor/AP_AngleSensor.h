@@ -45,9 +45,9 @@ public:
     }
 
     // AngleSensor driver types
-    enum AngleSensor_Type : uint8_t {
-        ANGLESENSOR_TYPE_NONE          =   ANGLE_SENSOR_TYPE_NONE,
-        ANGLESENSOR_TYPE_AS5048B       =   1,
+    enum class TYPE : uint8_t {
+        NONE          =   ANGLE_SENSOR_TYPE_NONE,
+        AS5048B       =   1,
     };
 
     // The AngleSensor_State structure is filled in by the backend driver

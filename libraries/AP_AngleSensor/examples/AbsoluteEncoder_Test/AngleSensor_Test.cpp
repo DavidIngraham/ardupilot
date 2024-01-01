@@ -28,7 +28,7 @@ void setup()
         hal.console->printf("Angle Sensor library test\n");
 
         // setup for analog pin 13
-        AP_Param::set_object_value(&angle_sensor_driver, angle_sensor_driver.var_info, "_TYPE", (uint8_t)AP_AngleSensor::AngleSensor_Type::ANGLESENSOR_TYPE_AS5048B);
+        AP_Param::set_object_value(&angle_sensor_driver, angle_sensor_driver.var_info, "_TYPE", (uint8_t)AP_AngleSensor::TYPE::AS5048B);
         AP_Param::set_object_value(&angle_sensor_driver, angle_sensor_driver.var_info, "_BUS", (uint8_t)0);
         AP_Param::set_object_value(&angle_sensor_driver, angle_sensor_driver.var_info, "_OFFS", (float)-354.57);
         AP_Param::set_object_value(&angle_sensor_driver, angle_sensor_driver.var_info, "_DIR", (int8_t)-1);

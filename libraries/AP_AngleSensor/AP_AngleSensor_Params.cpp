@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AP_AngleSensor_Params::var_info[] = {
     // @Description: What type of Angle Sensor is connected
     // @Values: 0:None,1:AS5048B
     // @User: Standard
-    AP_GROUPINFO_FLAGS("TYPE", 1, AP_AngleSensor_Params, _type, ANGLE_SENSOR_TYPE_NONE, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_AngleSensor_Params, _type, TYPE::NONE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: BUS
     // @DisplayName: Angle Sensor Serial Bus Index

@@ -54,11 +54,11 @@ void AP_AngleSensor::init(void)
     for (uint8_t i=0; i<ANGLE_SENSOR_MAX_INSTANCES; i++) {
         switch ((AngleSensor_Type)_params[i]._type.get()) {
 
-        case ANGLESENSOR_TYPE_AS5048B:
+        case AS5048B:
             drivers[i] = new AP_AngleSensor_AS5048B(*this, i, state[i]);
             break;
             
-        case ANGLESENSOR_TYPE_NONE:
+        case NONE:
             break;
         }
 
@@ -116,7 +116,7 @@ bool AP_AngleSensor::enabled(uint8_t instance) const
         return false;
     }
     // if no sensor type is selected, the sensor is not activated.
-    return _params[instance]._type != ANGLESENSOR_TYPE_NONE; 
+    return _params[instance]._type != NONE; 
 }
 
 uint8_t AP_AngleSensor::get_type(uint8_t instance) const
