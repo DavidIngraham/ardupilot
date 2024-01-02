@@ -23,12 +23,12 @@
 AP_WindVane_AngleSensor::AP_WindVane_AngleSensor(AP_WindVane &frontend) :
     AP_WindVane_Backend(frontend)
 {
-    _encoder_instance = _frontend._dir_analog_pin;
+    _encoder_instance = _frontend._type - FIRST_SENSOR_TYPE; //Type 21 = 1st sensor, 22=2nd sensor, etc.
 }
 
 void AP_WindVane_AngleSensor::update_direction()
 {
-    _encoder_instance = _frontend._dir_analog_pin; // Allow Runtime parameter update
+     _encoder_instance = _frontend._type - FIRST_SENSOR_TYPE; //Type 21 = 1st sensor, 22=2nd sensor, etc. 
     
     const AP_AngleSensor* angle_sensor_driver = AP_AngleSensor::get_singleton();
     if (angle_sensor_driver != nullptr) {

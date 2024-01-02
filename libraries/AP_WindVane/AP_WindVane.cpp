@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Wind Vane Type
     // @Description: Wind Vane type
-    // @Values: 0:None,1:Heading when armed,2:RC input offset heading when armed,3:Analog,4:NMEA,5:AngleSensor,10:SITL true,11:SITL apparent
+    // @Values: 0:None,1:Heading when armed,2:RC input offset heading when armed,3:Analog,4:NMEA,10:SITL true,11:SITL apparent, 20:Angle Sensor 1, 21: Angle Sensor 2
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_WindVane, _direction_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -50,8 +50,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: DIR_PIN
     // @DisplayName: Wind vane analog voltage pin for direction
-    // @Description: Analog input pin to read as wind vane direction. If the Wind Vane type is Angle Sensor, this parameter selects the Angle Sensor Instance.
-    // @Values: 0: AENC1, 1:AENC2, 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
+    // @Description: Analog input pin to read as wind vane direction. 
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("DIR_PIN", 3, AP_WindVane, _dir_analog_pin, WINDVANE_DEFAULT_PIN),
 

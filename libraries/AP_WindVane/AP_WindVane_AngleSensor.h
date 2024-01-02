@@ -31,6 +31,7 @@ public:
 
 private:
     uint8_t _encoder_instance = 0;
+    const uint8_t FIRST_SENSOR_TYPE = 21; 
 };
 
 #endif  //AP_WINDVANE_ANGLESENSOR_ENABLED
