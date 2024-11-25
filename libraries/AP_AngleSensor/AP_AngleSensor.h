@@ -64,9 +64,6 @@ public:
     // update state of all sensors. Should be called from main loop
     void update(void);
 
-    // log data to logger
-    void Log_Write() const;
-
     // return the number of angle sensor sensor instances
     uint8_t num_sensors(void) const { return _num_instances; }
 
@@ -102,6 +99,10 @@ private:
     uint8_t _num_instances;
 
     static AP_AngleSensor *_singleton;
+
+    // log data to logger
+    void _log_write() const;
+
 };
 
 namespace AP {

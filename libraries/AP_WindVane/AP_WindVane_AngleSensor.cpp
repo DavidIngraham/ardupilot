@@ -31,10 +31,8 @@ void AP_WindVane_AngleSensor::update_direction()
      _encoder_instance = _frontend._type - FIRST_SENSOR_TYPE; //Type 21 = 1st sensor, 22=2nd sensor, etc. 
     
     const AP_AngleSensor* angle_sensor_driver = AP_AngleSensor::get_singleton();
-    if (angle_sensor_driver != nullptr) {
-        if (angle_sensor_driver->healthy(_encoder_instance)) {
-            _frontend._direction_apparent_raw = angle_sensor_driver->get_angle_radians(_encoder_instance);
-        }
+    if (angle_sensor_driver != nullptr && angle_sensor_driver->healthy(_encoder_instance)) {
+        _frontend._direction_apparent_raw = angle_sensor_driver->get_angle_radians(_encoder_instance);
     }
 }
 

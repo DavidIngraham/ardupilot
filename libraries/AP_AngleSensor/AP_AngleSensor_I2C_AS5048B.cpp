@@ -15,7 +15,7 @@
 
 
 
-#include "AP_AngleSensor_AS5048B.h"
+#include "AP_AngleSensor_I2C_AS5048B.h"
 
 #if AP_ANGLESENSOR_ENABLED
 

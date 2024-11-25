@@ -15,20 +15,6 @@ const AP_Param::GroupInfo AP_AngleSensor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_AngleSensor_Params, _type, TYPE::NONE, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: BUS
-    // @DisplayName: Angle Sensor Serial Bus Index
-    // @Description: Angle Sensor Serial Bus Index
-    // @Values: 1: I2C1, 2: I2C2, 3: I2C3
-    // @User: Standard
-    AP_GROUPINFO("BUS",    2, AP_AngleSensor_Params, _bus, ANGLE_SENSOR_BUS_DEFAULT),
-
-    // @Param: ADDR
-    // @DisplayName: Serial Bus Address
-    // @Description: Serial Bus Address
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("ADDR",    3, AP_AngleSensor_Params, _addr, ANGLE_SENSOR_ADDR_DEFAULT),
-
     // @Param: OFFS
     // @DisplayName: Zero Position Offset, in Degrees
     // @Description: This offset is added to the measured angle

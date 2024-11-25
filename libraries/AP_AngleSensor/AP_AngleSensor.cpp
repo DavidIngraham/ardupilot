@@ -74,7 +74,7 @@ void AP_AngleSensor::init(void)
 void AP_AngleSensor::update(void)
 {
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (drivers[i] != nullptr && _params[i]._type != ANGLESENSOR_TYPE_NONE) {
+        if (drivers[i] != nullptr) {
             drivers[i]->update();
         }
     }
@@ -82,7 +82,7 @@ void AP_AngleSensor::update(void)
 }
 
 // log angle sensor information
-void AP_AngleSensor::Log_Write() const
+void AP_AngleSensor::_log_write() const
 {
     // return immediately if no angle sensors are enabled
     if (!enabled(0) && !enabled(1)) {

@@ -18,27 +18,15 @@
 
 #if AP_ANGLESENSOR_ENABLED
 
-#include "AP_AngleSensor.h"
 #include "AP_AngleSensor_Backend.h"
-#include <AP_HAL/I2CDevice.h>
 
-class AP_AngleSensor_AS5048B : public AP_AngleSensor_Backend
+class AP_AngleSensor_I2C : public AP_AngleSensor_Backend
 {
 public:
     // constructor
-    AP_AngleSensor_AS5048B(AP_AngleSensor &frontend, uint8_t instance, AP_AngleSensor::AngleSensor_State &state);
+    AP_AngleSensor_I2C(AP_AngleSensor &frontend, uint8_t instance, AP_AngleSensor::AngleSensor_State &state);
 
-    // update state
-    void update(void) override;
-
-    bool init(void);
-
-private:
-
-    // pointer to I2C device
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev = nullptr;
-
-    void timer(void);
+    static const struct AP_Param::GroupInfo var_info[];
 
 };
 
