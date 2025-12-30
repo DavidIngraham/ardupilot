@@ -208,7 +208,7 @@ void Plane::paraglider_brake_mixer(void) const
     if (control_mode == &mode_manual && channel_pitch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         pilot_flare_pct = constrain_float(channel_pitch->norm_input_dz(), 0, 1) * 100.0f; // Positive (nose up) only
     }
-    float rudder_in_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder); // centidegrees, -4500 to 4500
+    float rudder_in_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron); // centidegrees, -4500 to 4500
     float left_turn_demand_pct = -constrain_float(rudder_in_cd, -4500, 0) / 45.0f; // Map Left Rudder to Left Brake pct
     float right_turn_demand_pct = constrain_float(rudder_in_cd, 0, 4500) / 45.0f; // Map Right Rudder to Right Brake pct
 
