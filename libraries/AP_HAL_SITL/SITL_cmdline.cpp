@@ -40,6 +40,7 @@
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
 #include <SITL/SIM_StratoBlimp.h>
+#include <SITL/SIM_Paraglider.h>
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
@@ -182,6 +183,7 @@ static const struct {
     { "balloon",            Balloon::create },
     { "glider",             Glider::create },
     { "plane",              Plane::create },
+    { "paraglider",        Paraglider::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
