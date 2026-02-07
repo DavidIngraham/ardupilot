@@ -208,11 +208,11 @@ void Plane::paraglider_brake_mixer(void) const
     if (control_mode == &mode_manual && channel_pitch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         pilot_flare_pct = constrain_float(channel_pitch->norm_input_dz(), 0, 1) * 100.0f; // Positive (nose up) only
     }
-    float rudder_in_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron); // centidegrees, -4500 to 4500
-    float left_turn_demand_pct = -constrain_float(rudder_in_cd, -4500, 0) / 45.0f; // Map Left Rudder to Left Brake pct
-    float right_turn_demand_pct = constrain_float(rudder_in_cd, 0, 4500) / 45.0f; // Map Right Rudder to Right Brake pct
+    float aileron_in_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron); // centidegrees, -4500 to 4500
+    float left_turn_demand_pct = -constrain_float(aileron_in_cd, -4500, 0) / 45.0f; // Map Left Roll (negative) to Left Brake pct (positive)
+    float right_turn_demand_pct = constrain_float(aileron_in_cd, 0, 4500) / 45.0f; // Map Right Roll to Right Brake pct
 
-    float left_brake = constrain_float(left_turn_demand_pct + pilot_flare_pct, 0, 100); // Handle Saturation - Flare Wins
+    float left_brake = constrain_float(left_turn_demand_pct + pilot_flare_pct, 0, 100); // Handle Saturation - enforce max with no priority.
     float right_brake = constrain_float(right_turn_demand_pct + pilot_flare_pct, 0, 100);
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_pg_brake_left, left_brake);
