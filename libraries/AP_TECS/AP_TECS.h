@@ -1,5 +1,5 @@
 /// @file    AP_TECS.h
-/// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
+/// @brief   Combined Total Energy Speed & Height Control. 
 
 /*
  *  Written by Paul Riseborough 2013 to provide:
@@ -17,11 +17,15 @@
  */
 #pragma once
 
+#include "AP_TECS_config.h"
+
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_FixedWing.h>
 #include <Filter/AverageFilter.h>
+#include <AC_PID/AC_PI.h>
+
 
 class AP_Landing;
 class AP_TECS {
@@ -216,7 +220,7 @@ private:
 
     enum class Option {
         GLIDER_ONLY     = (1<<0),
-        DESCENT_SPEEDUP = (1<<1)
+        DESCENT_SPEEDUP = (1<<1),
     };
 
     bool option_is_set(const Option option) const {
@@ -511,4 +515,33 @@ private:
 
     // Update the allowable pitch range.
     void _update_pitch_limits(const int32_t ptchMinCO_cd);
+
+    // Log the TECS message
+    void _log_TECS_state(uint64_t now);
+
+
+
+    #if AP_TECS_PARAGLIDER_ENABLED
+        struct Paraglider_Params {
+            AP_Int8 enable;
+            AC_PI thr_pi{0.1f, 0.0f, 0.5f, true};
+            AP_Float pr_filt_hz;
+
+            static const AP_Param::GroupInfo var_info[];
+        } _pg_params;
+
+
+        // Pitch-rate low-pass filter for damper (initialized in reset)
+        LowPassFilterFloat _pg_pitch_rate_lpf;
+
+        // Update Demanded Throttle for Paraglider
+        void _update_paraglider(uint64_t now, float pitch_trim_deg);
+
+        // 50Hz Filtering tasks specific to paraglider
+        void _update_pitch_rate(void);
+
+        // reset integrators and filters when re-entering TECS
+        void _reset_paraglider(void);
+
+    #endif
 };
