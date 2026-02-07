@@ -384,6 +384,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["models/plane.parm", "default_params/plane-soaring.parm"]
             },
+            "paraglider": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/paraglider.parm",
+            },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/gazebo-zephyr.parm",
@@ -539,7 +543,9 @@ class VehicleInfo(object):
         if frame in frames:
             ret = self.options[vehicle]["frames"][frame]
         else:
-            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
+            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", 
+                      "last_letter", "jsbsim", "quadplane", "plane-elevon", 
+                      "plane-vtail", "plane", "airsim", "paraglider"]:
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break

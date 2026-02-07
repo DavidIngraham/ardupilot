@@ -1,0 +1,82 @@
+#Paraglider Specific
+ARSPD_TYPE      0
+AIRSPEED_CRUISE 5
+SCALING_SPEED   5
+AIRSPEED_STALL  3
+AIRSPEED_MIN    4
+AIRSPEED_MAX    7
+
+
+# Disable Pitch controller
+PTCH_RATE_D     0
+PTCH_RATE_D_FF  0
+PTCH_RATE_FF    0
+PTCH_RATE_I,    0
+PTCH_RATE_P     0
+PTCH2SRV_RLL,   0
+
+# Set up Pseudo Roll-Angle controller using Rate FF terms
+RLL2SRV_TCONST  1 
+RLL_RATE_FF     0.345
+RLL_RATE_D_FF   0 # Effectively Angle D Term
+
+# Disable Roll-Rate Controller
+RLL_RATE_P      0
+RLL_RATE_I      0
+RLL_RATE_D      0
+
+# Enable TECS Paraglider 
+TECS_OPTIONS    0
+
+# Standard SITL Defaults
+BATT_MONITOR    4
+LOG_BITMASK	    65535
+THR_MAX		    100
+RC1_MAX         2000
+RC1_MIN         1000
+RC1_TRIM        1500
+RC2_MAX         2000
+RC2_MIN         1000
+RC2_TRIM        1500
+RC3_MAX         2000
+RC3_MIN         1000
+SERVO3_MIN      1000
+SERVO3_MAX      2000
+RC3_TRIM        1000
+RC4_MAX         2000
+RC4_MIN         1000
+RC4_TRIM        1500
+RC5_MAX         2000
+RC5_MIN         1000
+RC5_TRIM        1500
+RC6_MAX         2000
+RC6_MIN         1000
+RC6_TRIM        1500
+RC7_MAX         2000
+RC7_MIN         1000
+RC7_TRIM        1500
+RC8_MAX         2000
+RC8_MIN         1000
+RC8_TRIM        1500
+FLTMODE1        10
+FLTMODE2        11
+FLTMODE3        12
+FLTMODE4        5
+FLTMODE5        2
+FLTMODE6        0
+FLTMODE_CH      8
+
+# we need small INS_ACC offsets so INS is recognised as being calibrated
+INS_ACCOFFS_X   0.001
+INS_ACCOFFS_Y   0.001
+INS_ACCOFFS_Z   0.001
+INS_ACCSCAL_X   1.001
+INS_ACCSCAL_Y   1.001
+INS_ACCSCAL_Z   1.001
+INS_ACC2OFFS_X   0.001
+INS_ACC2OFFS_Y   0.001
+INS_ACC2OFFS_Z   0.001
+INS_ACC2SCAL_X   1.001
+INS_ACC2SCAL_Y   1.001
+INS_ACC2SCAL_Z   1.001
+INS_GYR_CAL      0
