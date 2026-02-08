@@ -9,26 +9,27 @@ const AP_Param::GroupInfo AC_PI::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    1, AC_PI, kP, default_kp),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    1, AC_PI, kP, _default_kp),
 
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    2, AC_PI, kI, default_ki),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    2, AC_PI, kI, _default_ki),
 
     // @Param: IMAX
     // @DisplayName: PID Integral Maximum
     // @Description: The maximum/minimum value that the I term can output
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 3, AC_PI, imax, default_imax),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 3, AC_PI, imax, _default_imax),
 
     AP_GROUPEND
 };
 
 // Constructor
-AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax) :
-    default_kp(initial_p),
-    default_ki(initial_i),
-    default_imax(initial_imax)
+AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax, bool bidirectional) :
+    _default_kp(initial_p),
+    _default_ki(initial_i),
+    _default_imax(initial_imax),
+    _bidirectional(bidirectional)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -36,11 +37,28 @@ AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax) :
 
 float AC_PI::update(float measurement, float target, float dt)
 {
+    return update(measurement, target, dt, false, false);
+}
+
+float AC_PI::update(float measurement, float target, float dt, bool limit_neg, bool limit_pos)
+{
     const float err = target - measurement;
 
-    integrator += kI * err * dt;
-    integrator = constrain_float(integrator, 0, imax);
+    if (!((limit_neg && is_negative(err)) || (limit_pos && is_positive(err)))) {
+        integrator += kI * err * dt;
+        if (_bidirectional) {
+            integrator = constrain_float(integrator, -imax, imax);
+        } else {
+            integrator = constrain_float(integrator, 0, imax);
+        }
+    }
+    
     output_P = kP * err;
 
     return output_P + integrator;
+}
+
+void AC_PI::reset_I()
+{
+    integrator = 0.0; 
 }

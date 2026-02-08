@@ -10,12 +10,14 @@
 class AC_PI {
 public:
     // Constructor
-    AC_PI(float initial_p, float initial_i, float initial_imax);
+    // bidirectional: if true, integrator can go negative; if false (default), clamps to [0, imax] for heater use
+    AC_PI(float initial_p, float initial_i, float initial_imax, bool bidirectional = false);
 
     CLASS_NO_COPY(AC_PI);
 
     // update controller
     float update(float measurement, float target, float dt);
+    float update(float meassurement, float target, float df, bool limit_neg, bool limit_pos);
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -27,6 +29,9 @@ public:
         return integrator;
     }
 
+    // Resets the integrator to zero.
+    void reset_I();
+
 protected:
     AP_Float        kP;
     AP_Float        kI;
@@ -35,8 +40,8 @@ protected:
     float           output_P;
 
 private:
-    const float default_kp;
-    const float default_ki;
-    const float default_imax;
-
+    const float _default_kp;
+    const float _default_ki;
+    const float _default_imax;
+    bool _bidirectional; 
 };
