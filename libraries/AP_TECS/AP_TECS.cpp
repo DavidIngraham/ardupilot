@@ -292,6 +292,8 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     AP_GROUPINFO("HDEM_TCONST", 33, AP_TECS, _hgt_dem_tconst, 3.0f),
 
 #if AP_TECS_PARAGLIDER_ENABLED
+    // @Group: PG_
+    // @Path: TECS_Paraglider.cpp
     AP_SUBGROUPINFO(_pg_params, "PG_", 34, AP_TECS, AP_TECS::Paraglider_Params),
 #endif
 

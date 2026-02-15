@@ -220,7 +220,7 @@ private:
 
     enum class Option {
         GLIDER_ONLY     = (1<<0),
-        DESCENT_SPEEDUP = (1<<1),
+        DESCENT_SPEEDUP = (1<<1)
     };
 
     bool option_is_set(const Option option) const {
@@ -519,10 +519,10 @@ private:
     // Log the TECS message
     void _log_TECS_state(uint64_t now);
 
-
-
     #if AP_TECS_PARAGLIDER_ENABLED
         struct Paraglider_Params {
+            //Paraglider_Params() : thr_pi {}
+
             AP_Int8 enable;
             AC_PI thr_pi{0.1f, 0.0f, 0.5f, true};
             AP_Float pr_filt_hz;
