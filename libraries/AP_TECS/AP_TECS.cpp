@@ -1333,12 +1333,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // initialise selected states and variables if DT > 1 second or in climbout
     _initialise_states(hgt_afe);
 
-    // Calculate the height demand
-    _update_height_demand();
-
+    
     // Paraglider mode is only dependent on height demand calculations
 #if AP_TECS_PARAGLIDER_ENABLED
     if (_pg_params.enable) {
+        // Calculate the height demand
+        _update_height_demand();
+
+        // Run the paraglider controller (SISO - throttle/height only)
         _update_paraglider(now, pitch_trim_deg);
         return;
     }
@@ -1349,6 +1351,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // Calculate the speed demand
     _update_speed_demand();
+
+    // Calculate the height demand
+    _update_height_demand();
 
     // Detect underspeed condition
     _detect_underspeed();

@@ -147,7 +147,7 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
     const Vector3f vB_bf = velocity_air_bf;
     const Vector3f omega_bf = gyro;
 
-    // ---------- Fuselage drag (computed in body, applied opposite local velocity vector) ----------
+    // Fuselage drag (computed in body, applied opposite local velocity vector)
     const Vector3f vF_bf = vB_bf + (omega_bf % model.S_FB_B);
 
     const float uF = clamp_preserve_sign(vF_bf.x, 0.01f);
