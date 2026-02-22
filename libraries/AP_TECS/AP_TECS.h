@@ -24,7 +24,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_FixedWing.h>
 #include <Filter/AverageFilter.h>
-#include <AC_PID/AC_PI.h>
 
 
 class AP_Landing;
@@ -524,7 +523,6 @@ private:
             //Paraglider_Params() : thr_pi {}
 
             AP_Int8 enable;
-            AC_PI thr_pi{0.1f, 0.0f, 0.5f, true};
             AP_Float pr_filt_hz;
 
             static const AP_Param::GroupInfo var_info[];
@@ -534,8 +532,10 @@ private:
         // Pitch-rate low-pass filter for damper (initialized in reset)
         LowPassFilterFloat _pg_pitch_rate_lpf;
 
+        void _update_paraglider_hgt_demand(void);
+
         // Update Demanded Throttle for Paraglider
-        void _update_paraglider(uint64_t now, float pitch_trim_deg);
+        void _update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_afe);
 
         // 50Hz Filtering tasks specific to paraglider
         void _update_pitch_rate(void);

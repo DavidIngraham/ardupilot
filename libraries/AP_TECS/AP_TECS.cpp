@@ -1304,6 +1304,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _hgt_afe = hgt_afe;
     _load_factor = load_factor;
 
+    // Paraglider mode branches here with simpler logic
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (_pg_params.enable) {
+        _update_paraglider(now, pitch_trim_deg, hgt_afe);
+        return;
+    }
+#endif //AP_TECS_PARAGLIDER_ENABLED
+
     // Don't allow height demand to continue changing in a direction that saturates vehicle manoeuvre limits
     // if vehicle is unable to follow the demanded climb or descent.
     const bool max_climb_condition = (_pitch_dem_unc > _PITCHmaxf || _thr_clip_status == clipStatus::MAX) &&
@@ -1332,19 +1340,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // initialise selected states and variables if DT > 1 second or in climbout
     _initialise_states(hgt_afe);
-
-    
-    // Paraglider mode is only dependent on height demand calculations
-#if AP_TECS_PARAGLIDER_ENABLED
-    if (_pg_params.enable) {
-        // Calculate the height demand
-        _update_height_demand();
-
-        // Run the paraglider controller (SISO - throttle/height only)
-        _update_paraglider(now, pitch_trim_deg);
-        return;
-    }
-#endif //AP_TECS_PARAGLIDER_ENABLED
 
     // Calculate Specific Total Energy Rate Limits
     _update_STE_rate_lim();
