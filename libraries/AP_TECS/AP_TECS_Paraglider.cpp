@@ -48,8 +48,10 @@ void AP_TECS::_reset_paraglider(void)
 
 void AP_TECS::_update_paraglider_hgt_demand(void)
 {
-
-    _hgt_dem_in = _hgt_dem_in_raw;
+    // When initiating a loiter, _hgt_dem_in_raw may be zero. In this case, just use the _hgt_dem_in that was set in initialize states (current alt)
+    if (!iszero(_hgt_dem_in_raw)) {
+        _hgt_dem_in = _hgt_dem_in_raw;
+    }
 
     // 2-sample smoothing of command 
     const float hgt_in = 0.5f * (_hgt_dem_in + _hgt_dem_in_prev);
@@ -200,7 +202,7 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
 
     _log_TECS_state(now);
 
-    #if 1
+    #if 0
     static uint32_t last_ms;
     if (AP_HAL::millis() - last_ms > 1000) {
         last_ms = AP_HAL::millis();
