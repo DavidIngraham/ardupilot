@@ -254,8 +254,10 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
         const float ay = (-model.aero.CD_da * vP);
         const float az = (-model.aero.CL_da * uP - model.aero.CD_da * wP);
 
-        const float qbar = 0.5f * air_density * sq(V);
-        F_brake_pf = Vector3f{ax * k, ay * k, az * k} * (qbar * model.A_para_m2);
+        // Eq. 20-21: ax/ay/az already contain one power of velocity.
+        // Multiply by V, not V^2, so brake forces scale with dynamic pressure.
+        const float scale = 0.5f * air_density * V * model.A_para_m2;
+        F_brake_pf = Vector3f{ax * k, ay * k, az * k} * scale;
     }
 
     // ---------- Transform parafoil forces to body ----------
@@ -329,7 +331,9 @@ Vector3f Paraglider::compute_torque_bf(float brake_left_rad,
     Vector3f M_brake_bf{};
     if (V > 0.1f) {
         const float qbarS = 0.5f * air_density * model.A_para_m2 * sq(V);
-        const float scale = (model.b_span_m / model.d_brake_m) * delta_a;
+        // Eq. 22: b^2/d supplies the moment arm in metres. Cl_da and
+        // Cn_da are dimensionless derivatives per radian of brake deflection.
+        const float scale = (sq(model.b_span_m) / model.d_brake_m) * delta_a;
         M_brake_bf = Vector3f{
             model.aero.Cl_da * scale,
             0.0f,
@@ -341,6 +345,9 @@ Vector3f Paraglider::compute_torque_bf(float brake_left_rad,
     const Vector3f r_MB_bf = model.S_FB_B + model.S_MF_F;
     const Vector3f M_thrust_bf = r_MB_bf % F.F_thrust_bf;
 
+    // Propeller reaction torque is separate from the thrust lever-arm moment.
+    const Vector3f M_prop_bf{model.prop_torque_per_thrust_m * F.F_thrust_bf.x, 0.0f, 0.0f};
+
     // Lever arms from forces away from CG
     const Vector3f M_fuse_arm_bf = model.S_FB_B % F.F_fuse_bf;
     const Vector3f M_para_arm_bf = model.S_PB_B % (F.F_para_bf + F.F_brake_bf);
@@ -349,7 +356,7 @@ Vector3f Paraglider::compute_torque_bf(float brake_left_rad,
     const Vector3f M_roll_damp_bf{-model.roll_damp_Nm_per_rps * p, 0.0f, 0.0f};
 
 
-    return M_aero_bf + M_brake_bf + M_thrust_bf + M_fuse_arm_bf + M_para_arm_bf + M_roll_damp_bf;
+    return M_aero_bf + M_brake_bf + M_thrust_bf + M_fuse_arm_bf + M_para_arm_bf + M_roll_damp_bf + M_prop_bf;
 }
 
 Vector3f Paraglider::inertia_mul(const Vector3f &w) const
@@ -513,6 +520,7 @@ void Paraglider::load_coeffs(const char *model_json)
     LOAD_PHYS_FLOAT(c_chord_m);
     LOAD_PHYS_FLOAT(d_brake_m);
     LOAD_PHYS_FLOAT(thrust_max_N);
+    LOAD_PHYS_FLOAT(prop_torque_per_thrust_m);
     LOAD_PHYS_FLOAT(brake_max_rad);
     LOAD_PHYS_FLOAT(canopy_pitch_rad);
     LOAD_PHYS_FLOAT(roll_damp_Nm_per_rps);

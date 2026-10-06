@@ -19,7 +19,9 @@
     Proc. Australasian Conference on Robotics and Automation (ACRA), 2012.
     https://www.araa.asn.au/acra/acra2012/papers/pap151.pdf
 
-    With additi
+    Brake force and moment conventions follow equations 20-22. Aerodynamic
+    coefficients are dimensionless; brake derivatives are per radian.
+    The model assumes an inflated canopy rigidly attached to the payload.
 */
 
 #pragma once
@@ -41,6 +43,7 @@ public:
     void update(const struct sitl_input &input) override;
 
 private:
+    friend class ParagliderTest;
     void load_coeffs(const char *model_json);
 
     struct AeroCoeffs {
@@ -60,14 +63,15 @@ private:
         float Cmq     = -2.0f;
         float Cm0     = 0.018f;
         float Cmalpha = -0.2f;
-        float Cnr     = 0.0f;
+        // Provisional effective damping derivative against r*b/(2*V).
+        float Cnr     = -0.05f;
 
-        // Brake force model (kept close to your original structure)
-        // These act in the parafoil axes force expression.
+        // Dimensionless lift/drag derivatives per radian of brake deflection.
+        // Forces use the maximum left/right deflection, following Eq. 20-21.
         float CL_da = 0.0021f;
         float CD_da = 0.0001f;
 
-        // Brake moment model (Eq. 22-style)
+        // Dimensionless roll/yaw derivatives per radian (Eq. 22).
         float Cl_da = 0.0001f;
         float Cn_da = 0.004f;
     };
@@ -103,6 +107,10 @@ private:
 
         // Actuator limits
         float thrust_max_N = 10.0f;
+
+        // Signed body-X reaction torque / thrust (Nm/N = m).
+        // Negative corresponds to propeller rotation about positive body X.
+        float prop_torque_per_thrust_m = -0.02f;
         float brake_max_rad = radians(45.0f);
 
         // Canopy pitch relative to body (rad).
