@@ -564,6 +564,10 @@
                     "default_params/plane-soaring.parm"
                 ]
             },
+            "paraglider": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/paraglider.parm"
+            },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/gazebo-zephyr.parm",
