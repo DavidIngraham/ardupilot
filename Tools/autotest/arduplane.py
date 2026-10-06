@@ -4,11 +4,14 @@ Fly ArduPlane in SITL
 AP_FLAKE8_CLEAN
 '''
 
+import csv
+import json
 import math
 import operator
 import os
 import re
 import signal
+import tempfile
 import time
 
 from pymavlink import mavextra
@@ -105,6 +108,400 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             return self.takeoff_in_QHOVER(alt=alt, relative=relative, timeout=timeout)
 
         return self.takeoff_in_FBWA(alt=alt, alt_max=alt_max, relative=relative, timeout=timeout)
+
+    def paraglider_takeoff(self, altitude=40, model='paraglider-throw', customisations=None):
+        '''Start the paraglider model and launch with the simulated throw assist'''
+        self.customise_SITL_commandline(
+            customisations or [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath('paraglider'),
+            wipe=True,
+        )
+        self.set_rc_default()
+        self.assert_parameter_values({
+            'TECS_PG_ENABLE': 1,
+            'SERVO1_FUNCTION': 190,
+            'SERVO2_FUNCTION': 191,
+        })
+        self.set_parameters({
+            'TKOFF_ALT': altitude,
+            'SERVO7_FUNCTION': 0,
+        })
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.set_servo(7, 2000)
+        self.wait_altitude(altitude - 5, altitude + 10, relative=True, timeout=120)
+        self.set_servo(7, 1000)
+
+    def ParagliderFlight(self):
+        '''Fly a paraglider through climb, brake turns and an AUTO waypoint mission'''
+        self.paraglider_takeoff()
+
+        def check_flight(mav, message):
+            if message.get_type() == 'GLOBAL_POSITION_INT' and message.relative_alt < 10000:
+                raise NotAchievedException('Paraglider lost flight altitude')
+            if message.get_type() == 'ATTITUDE':
+                values = (message.roll, message.pitch, message.yaw,
+                          message.rollspeed, message.pitchspeed, message.yawspeed)
+                if not all(math.isfinite(value) for value in values):
+                    raise NotAchievedException('Non-finite paraglider attitude')
+
+        self.install_message_hook(check_flight)
+        try:
+            self.start_subtest('Sustained powered flight')
+            self.change_mode('FBWB')
+            self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+            self.wait_groundspeed(3, 15, minimum_duration=5, timeout=30)
+            self.wait_altitude(25, 55, relative=True, minimum_duration=15, timeout=30)
+            self.wait_distance(50, accuracy=10, timeout=30)
+            self.assert_armed()
+
+            for direction, pwm, heading_change in [('Left', 1300, -60), ('Right', 1700, 60)]:
+                self.start_subtest('%s turn using asymmetric brakes' % direction)
+                heading = self.assert_receive_message('VFR_HUD').heading
+                self.set_rc(1, pwm)
+                self.wait_heading((heading + heading_change) % 360, accuracy=10, timeout=60)
+                self.set_rc(1, 1500)
+                self.wait_altitude(20, 60, relative=True, minimum_duration=5, timeout=30)
+                self.assert_armed()
+
+            self.start_subtest('AUTO waypoint mission with altitude changes')
+            self.set_parameters({'WP_RADIUS': 15, 'WP_LOITER_RAD': 40})
+            self.upload_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 40),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 200, 60),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 200, 40),
+                # Nonzero coordinates avoid MAVLink's "current position"
+                # interpretation of a loiter command at latitude/longitude 0.
+                (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 1, 1, 40),
+            ])
+            self.set_current_waypoint(1)
+            self.change_mode('AUTO')
+            # Brake-turn dynamics change how far we travel before AUTO.
+            # Allow the initial approach at cruise speed plus turn acquisition.
+            approach_timeout = max(120, 60 + self.distance_to_nav_target() /
+                                   self.get_parameter('AIRSPEED_CRUISE'))
+            self.wait_current_waypoint(2, timeout=approach_timeout)
+            self.wait_altitude(50, 70, relative=True, timeout=120)
+            self.wait_current_waypoint(3, timeout=120)
+            self.wait_current_waypoint(4, timeout=120)
+            self.wait_altitude(25, 55, relative=True, minimum_duration=10, timeout=60)
+            self.wait_distance_to_home(0, 70, minimum_duration=15, timeout=120)
+            self.wait_altitude(25, 55, relative=True, minimum_duration=5, timeout=30)
+            self.assert_armed()
+        finally:
+            self.remove_message_hook(check_flight)
+
+        # End the smoke check by restarting SITL, rather than requiring a
+        # landing controller tuned for this model. Restore the normal Plane
+        # frame so the next test starts with a disarmed vehicle.
+        self.reset_SITL_commandline()
+
+    def ParagliderAutoMission(self, l1_damping=None):
+        """Fly an extended AUTO route with altitude changes and opposing two-turn loiters"""
+        self.paraglider_takeoff(altitude=60)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.wait_altitude(45, 75, relative=True, minimum_duration=15, timeout=60)
+        self.set_parameters({'WP_RADIUS': 40, 'WP_MAX_RADIUS': 0, 'WP_LOITER_RAD': 60,
+                             'SIM_WIND_SPD': 0, 'SIM_WIND_TURB': 0})
+        if l1_damping is not None:
+            self.set_parameter('NAVL1_DAMPING', l1_damping)
+        navigation_parameters = self.get_parameters(['NAVL1_DAMPING', 'NAVL1_PERIOD'])
+        waypoint = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        turns = mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS
+        unlimited = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
+        route = [
+            (waypoint, 250, 0, 60),
+            (waypoint, 650, 0, 90),
+            (turns, 650, 400, 90),
+            (waypoint, 250, 400, 60),
+            (waypoint, 250, 0, 45),
+            (waypoint, -150, 0, 45),
+            (waypoint, -150, -400, 75),
+            (turns, 250, -400, 75),
+            (waypoint, 650, -400, 55),
+            (waypoint, 650, 0, 55),
+            (waypoint, 250, 0, 60),
+            # Nonzero offsets avoid the current-position interpretation.
+            (unlimited, 1, 1, 60),
+        ]
+        mission = self.create_simple_relhome_mission(route)
+        for seq, radius in ((3, 60), (8, -60)):
+            mission[seq].param1 = 2
+            mission[seq].param3 = radius
+        mission[-1].param3 = 60
+        self.check_mission_upload_download(mission)
+        home = self.home_position_as_location()
+        targets = {seq: self.offset_location_ne(home, north, east)
+                   for seq, (_, north, east, _) in enumerate(route, 1)}
+        metrics = {seq: {'closest_distance_m': None, 'altitude_at_closest_m': None,
+                         'circle_angle_rad': 0.0, 'last_circle_angle_rad': None}
+                   for seq in targets}
+        rows = []
+
+        def observe(mav, message):
+            if message.get_type() == 'ATTITUDE':
+                if not all(math.isfinite(value) for value in (
+                        message.roll, message.pitch, message.yaw,
+                        message.rollspeed, message.pitchspeed, message.yawspeed)):
+                    raise NotAchievedException('Non-finite extended mission attitude')
+            if message.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            altitude = message.relative_alt * 0.001
+            if not 20 <= altitude <= 130:
+                raise NotAchievedException('Extended mission exceeded altitude bounds')
+            current = mav.messages.get('MISSION_CURRENT')
+            attitude = mav.messages.get('ATTITUDE')
+            servos = mav.messages.get('SERVO_OUTPUT_RAW')
+            navigation = mav.messages.get('NAV_CONTROLLER_OUTPUT')
+            if current is None or attitude is None or servos is None or navigation is None:
+                return
+            seq = current.seq
+            if seq not in targets:
+                return
+            here = Location(message.lat * 1.0e-7, message.lon * 1.0e-7,
+                            message.alt * 0.001, AltFrame.ABSOLUTE)
+            distance = self.get_distance(targets[seq], here)
+            metric = metrics[seq]
+            if metric['closest_distance_m'] is None or distance < metric['closest_distance_m']:
+                metric['closest_distance_m'] = distance
+                metric['altitude_at_closest_m'] = altitude
+            if seq in (3, 8):
+                # Exclude the approach: count angular travel only near the orbit.
+                if 30 <= distance <= 100:
+                    angle = math.radians(self.get_bearing(targets[seq], here))
+                    previous = metric['last_circle_angle_rad']
+                    if previous is not None:
+                        metric['circle_angle_rad'] += (angle - previous + math.pi) % (2 * math.pi) - math.pi
+                    metric['last_circle_angle_rad'] = angle
+                else:
+                    metric['last_circle_angle_rad'] = None
+            rows.append((seq, message.time_boot_ms * 0.001, here.lat, here.lng,
+                         altitude, distance, math.hypot(message.vx, message.vy) * 0.01,
+                         attitude.roll, attitude.pitch, attitude.yawspeed,
+                         servos.servo1_raw, servos.servo2_raw, servos.servo3_raw,
+                         navigation.nav_roll, navigation.xtrack_error))
+
+        for message in ('GLOBAL_POSITION_INT', 'ATTITUDE', 'SERVO_OUTPUT_RAW',
+                        'MISSION_CURRENT', 'NAV_CONTROLLER_OUTPUT'):
+            self.set_message_rate_hz(message, 10)
+        suffix = '' if l1_damping is None else '-L1-%.2f' % l1_damping
+        filename = self.buildlogs_path('ParagliderAutoMission' + suffix + '.csv')
+        self.install_message_hook(observe)
+        try:
+            self.set_current_waypoint(1)
+            self.change_mode('AUTO')
+            speed = self.get_parameter('AIRSPEED_CRUISE')
+            for seq, (command, _, _, altitude) in enumerate(route[:-1], 1):
+                self.start_subtest('AUTO item %u at %u metres' % (seq, altitude))
+                self.wait_current_waypoint(seq, timeout=30)
+                timeout = 90 + self.distance_to_nav_target() / speed
+                if command == turns:
+                    timeout += 2 * 2 * math.pi * 60 / speed + 120
+                self.wait_current_waypoint(seq + 1, timeout=timeout)
+                metric = metrics[seq]
+                if command == waypoint:
+                    # Record proximity without forcing a tight acquisition:
+                    # normal Plane navigation may advance across the finish line.
+                    if metric['closest_distance_m'] is None:
+                        raise NotAchievedException('No track samples for mission waypoint %u' % seq)
+                    if abs(metric['altitude_at_closest_m'] - altitude) > 12:
+                        raise NotAchievedException('Wrong altitude at extended mission waypoint %u' % seq)
+                else:
+                    direction = 1 if seq == 3 else -1
+                    if direction * metric['circle_angle_rad'] < 1.5 * 2 * math.pi:
+                        raise NotAchievedException('Insufficient correctly directed loiter turns at item %u' % seq)
+                self.assert_mode('AUTO')
+                self.assert_armed()
+            self.start_subtest('Sustained home loiter after extended mission')
+            self.wait_distance_to_home(0, 90, minimum_duration=30, timeout=180)
+            self.wait_altitude(48, 72, relative=True, minimum_duration=15, timeout=60)
+            self.assert_mode('AUTO')
+            self.assert_armed()
+        finally:
+            self.remove_message_hook(observe)
+            with open(filename, 'w', newline='') as output:
+                writer = csv.writer(output)
+                writer.writerow(('seq', 'time_s', 'latitude_deg', 'longitude_deg',
+                                 'relative_alt_m', 'target_distance_m', 'groundspeed_mps',
+                                 'roll_rad', 'pitch_rad', 'yaw_rate_radps',
+                                 'left_brake_pwm', 'right_brake_pwm', 'throttle_pwm',
+                                 'nav_roll_deg', 'nav_cross_track_error_m'))
+                writer.writerows(rows)
+            with open(filename + '.json', 'w') as output:
+                json.dump(dict(route=route, metrics=metrics, home_lat=home.lat,
+                               home_lng=home.lng, waypoint_radius_m=40, waypoint_max_radius_m=0,
+                               loiter_radius_m={3: 60, 8: -60, 12: 60},
+                               navigation_parameters=navigation_parameters), output, indent=2)
+            self.progress('Extended paraglider mission track: %s' % filename)
+        self.reset_SITL_commandline()
+
+    def ParagliderL1Damping(self):
+        """Evaluate stronger L1 guidance damping on the extended AUTO mission"""
+        self.ParagliderAutoMission(l1_damping=0.85)
+
+    def ParagliderDynamics(self):
+        '''Record repeatable trim, throttle-step and brake-step dynamics benchmarks'''
+        self.paraglider_takeoff(altitude=80)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.wait_altitude(60, 100, relative=True, minimum_duration=15, timeout=60)
+        rows = []
+
+        def record(phase, duration):
+            start = self.get_sim_time()
+            while self.get_sim_time_cached() - start < duration:
+                hud = self.assert_receive_message('VFR_HUD')
+                attitude = self.assert_receive_message('ATTITUDE')
+                position = self.assert_receive_message('GLOBAL_POSITION_INT')
+                servos = self.assert_receive_message('SERVO_OUTPUT_RAW')
+                values = (hud.airspeed, hud.groundspeed, hud.climb,
+                          attitude.roll, attitude.pitch, attitude.yawspeed)
+                if not all(math.isfinite(value) for value in values):
+                    raise NotAchievedException('Non-finite paraglider benchmark data')
+                if position.relative_alt < 20000:
+                    raise NotAchievedException('Paraglider benchmark lost flight altitude')
+                rows.append((phase, position.time_boot_ms * 0.001,
+                             position.relative_alt * 0.001, *values,
+                             servos.servo1_raw, servos.servo2_raw, servos.servo3_raw))
+
+        filename = self.buildlogs_path('ParagliderDynamics.csv')
+        try:
+            record('trim_fbwb', 15)
+            trim_pwm = round(sum(row[-1] for row in rows) / len(rows))
+            if not 1100 <= trim_pwm <= 1800:
+                raise NotAchievedException('Trim throttle leaves insufficient step-test headroom')
+            self.progress('Paraglider trim throttle: %u PWM' % trim_pwm)
+            self.change_mode('MANUAL')
+            self.set_rc(3, trim_pwm)
+            record('trim_manual', 10)
+            self.set_rc(3, trim_pwm + 100)
+            record('throttle_step', 10)
+            self.set_rc(3, trim_pwm)
+            record('throttle_recovery', 10)
+            self.set_rc(1, 1400)
+            record('left_brake_step', 5)
+            self.set_rc(1, 1500)
+            record('brake_recovery', 10)
+
+            def mean_value(phase, index):
+                samples = [row[index] for row in rows if row[0] == phase]
+                if len(samples) < 10:
+                    raise NotAchievedException('Insufficient samples for %s' % phase)
+                return sum(samples) / len(samples)
+
+            # Qualitative response checks; the CSV supplies the quantitative
+            # baseline without treating this uncalibrated model as flight data.
+            if mean_value('throttle_step', 5) <= mean_value('trim_manual', 5):
+                raise NotAchievedException('Throttle step did not increase climb rate')
+            if mean_value('left_brake_step', 8) >= 0:
+                raise NotAchievedException('Left brake step did not produce left yaw')
+            self.assert_armed()
+        finally:
+            with open(filename, 'w', newline='') as output:
+                writer = csv.writer(output)
+                writer.writerow(('phase', 'time_s', 'relative_alt_m', 'airspeed_mps',
+                                 'groundspeed_mps', 'climb_mps', 'roll_rad', 'pitch_rad',
+                                 'yaw_rate_radps', 'left_brake_pwm', 'right_brake_pwm', 'throttle_pwm'))
+                writer.writerows(rows)
+            self.progress('Paraglider dynamics benchmark: %s' % filename)
+        self.reset_SITL_commandline()
+
+    def ParagliderYawExperiments(self, case_names=None):
+        """Isolate free lateral dynamics with model truth and one-factor interventions"""
+        cases = [
+            ('baseline', {}, 1200, 1450, False),
+            ('repeat', {}, 1200, 1450, False),
+            ('no_pulse', {}, 1200, 1500, False),
+            ('mirror', {}, 1200, 1550, False),
+            ('yaw_damping', {'aero': {'Cnr': -0.1}}, 1200, 1450, False),
+            ('no_yaw_damping', {'aero': {'Cnr': 0.0}}, 1200, 1450, False),
+            ('no_prop_torque', {'prop_torque_per_thrust_m': 0.0}, 1200, 1450, False),
+            ('reverse_prop_torque', {'prop_torque_per_thrust_m': 0.02}, 1200, 1450, False),
+            ('no_inertia_coupling', {'Ixz': 0.0}, 1200, 1450, False),
+            ('no_roll_restoring', {'aero': {'Clphi': 0.0}}, 1200, 1450, False),
+            ('double_roll_damping', {'roll_damp_Nm_per_rps': 1.2}, 1200, 1450, False),
+            ('no_roll_damping', {'roll_damp_Nm_per_rps': 0.0}, 1200, 1450, False),
+            ('rate_600', {}, 600, 1450, False),
+            ('rate_2400', {}, 2400, 1450, False),
+            ('instant_servo', {}, 1200, 1450, True),
+        ]
+        if case_names is not None:
+            if set(case_names) - {case[0] for case in cases}:
+                raise ValueError('Unknown paraglider yaw experiment case')
+            cases = [case for case in cases if case[0] in case_names]
+        columns = ('phase', 'time_s', 'truth_roll_rad', 'truth_pitch_rad',
+                   'truth_yaw_rad', 'truth_p_radps', 'truth_q_radps',
+                   'truth_r_radps', 'estimated_r_radps', 'relative_alt_m',
+                   'vx_mps', 'vy_mps', 'vz_mps', 'left_brake_pwm',
+                   'right_brake_pwm', 'throttle_pwm')
+        with tempfile.TemporaryDirectory(prefix='paraglider-yaw-') as directory:
+            for name, overrides, rate, pulse, instant in cases:
+                self.start_subtest(name)
+                config = os.path.join(directory, name + '.json')
+                with open(config, 'w') as output:
+                    json.dump(overrides, output)
+                self.paraglider_takeoff(
+                    # SITL maps leading-slash paths relative to its cwd.
+                    altitude=100, model='paraglider-throw:' + os.path.relpath(config),
+                    customisations=[])
+                self.set_parameter('SIM_RATE_HZ', rate)
+                self.set_parameters({'SIM_WIND_SPD': 0, 'SIM_WIND_TURB': 0})
+                if instant:
+                    self.set_parameter('SIM_SERVO_SPEED', 0)
+                self.change_mode('FBWB')
+                self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+                self.wait_altitude(80, 120, relative=True, minimum_duration=15, timeout=60)
+                self.change_mode('MANUAL')
+                self.set_rc(3, 1442)
+                for message in ('SIMSTATE', 'ATTITUDE', 'GLOBAL_POSITION_INT', 'SERVO_OUTPUT_RAW'):
+                    self.set_message_rate_hz(message, 20)
+                rows = []
+
+                def record(phase, duration):
+                    start = self.get_sim_time()
+                    while self.get_sim_time_cached() - start < duration:
+                        truth = self.assert_receive_message('SIMSTATE')
+                        attitude = self.assert_receive_message('ATTITUDE')
+                        position = self.assert_receive_message('GLOBAL_POSITION_INT')
+                        servos = self.assert_receive_message('SERVO_OUTPUT_RAW')
+                        row = (phase, position.time_boot_ms * 0.001,
+                               truth.roll, truth.pitch, truth.yaw,
+                               truth.xgyro, truth.ygyro, truth.zgyro,
+                               attitude.yawspeed, position.relative_alt * 0.001,
+                               position.vx * 0.01, position.vy * 0.01, position.vz * 0.01,
+                               servos.servo1_raw, servos.servo2_raw, servos.servo3_raw)
+                        if not all(math.isfinite(value) for value in row[1:]):
+                            raise NotAchievedException('Non-finite yaw experiment data')
+                        if position.relative_alt < 20000:
+                            raise NotAchievedException('Yaw experiment lost flight altitude')
+                        rows.append(row)
+
+                try:
+                    record('settle', 10)
+                    self.set_rc(1, pulse)
+                    record('pulse', 0.5)
+                    self.set_rc(1, 1500)
+                    record('release', 30)
+                    self.assert_armed()
+                finally:
+                    filename = self.buildlogs_path('ParagliderYaw-' + name + '.csv')
+                    with open(filename, 'w', newline='') as output:
+                        writer = csv.writer(output)
+                        writer.writerow(columns)
+                        writer.writerows(rows)
+                    with open(filename + '.json', 'w') as output:
+                        json.dump(dict(overrides=overrides, rate_hz=rate,
+                                       pulse_pwm=pulse, instant_servo=instant), output, indent=2)
+                self.reset_SITL_commandline()
+
+    def ParagliderYawDefaults(self):
+        """Compare provisional yaw damping and propeller torque with disabled/reversed terms"""
+        self.ParagliderYawExperiments(case_names=(
+            'baseline', 'no_yaw_damping', 'no_prop_torque', 'reverse_prop_torque'))
 
     def takeoff_in_QHOVER(self, alt=20, relative=True, timeout=None):
         '''VTOL climb to altitude in QHOVER'''
@@ -10378,6 +10775,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.DO_CHANGE_SPEED,
             self.GuidedRequest,
             self.MainFlight,
+            Test(self.ParagliderFlight, speedup=10),
+            Test(self.ParagliderAutoMission, speedup=10),
+            Test(self.ParagliderL1Damping, speedup=10),
+            Test(self.ParagliderDynamics, speedup=10),
+            Test(self.ParagliderYawExperiments, speedup=10),
+            Test(self.ParagliderYawDefaults, speedup=10),
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,

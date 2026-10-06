@@ -3,7 +3,7 @@ ARSPD_TYPE      0
 AIRSPEED_CRUISE 5
 SCALING_SPEED   5
 AIRSPEED_STALL  3
-AIRSPEED_MIN    4
+AIRSPEED_MIN    5
 AIRSPEED_MAX    7
 SERVO1_FUNCTION 190
 SERVO2_FUNCTION 191
@@ -37,6 +37,10 @@ RLL_RATE_SMAX    150.000000
 RLL_RATE_P      0
 RLL_RATE_I      0
 RLL_RATE_D      0
+
+# L1 guidance: reduce overshoot with the provisional paraglider dynamics
+NAVL1_DAMPING   0.85
+NAVL1_PERIOD    17
 
 # Enable TECS Paraglider
 TECS_PG_ENABLE   1
