@@ -19,6 +19,7 @@
 *.bin
 !*_bl.bin
 !font*.bin
+*.core
 *.d
 *.dfu
 *.dll
