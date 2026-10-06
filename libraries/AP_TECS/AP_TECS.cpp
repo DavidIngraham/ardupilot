@@ -291,6 +291,12 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HDEM_TCONST", 33, AP_TECS, _hgt_dem_tconst, 3.0f),
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    // @Group: PG_
+    // @Path: AP_TECS_Paraglider.cpp
+    AP_SUBGROUPINFO(_pg_params, "PG_", 34, AP_TECS, AP_TECS::Paraglider_Params),
+#endif
+
     AP_GROUPEND
 };
 
@@ -336,6 +342,9 @@ void AP_TECS::update_50hz(void)
         _height_filter.dd_height = 0.0f;
         DT = 0.02f; // when first starting TECS, use most likely time constant
         _vdot_filter.reset();
+#if AP_TECS_PARAGLIDER_ENABLED
+        _reset_paraglider();
+#endif // AP_TECS_PARAGLIDER_ENABLED
     }
     _update_50hz_last_usec = now;
 
@@ -373,6 +382,10 @@ void AP_TECS::update_50hz(void)
             _height_filter.height += integ3_input*DT;
         }
     }
+
+#if AP_TECS_PARAGLIDER_ENABLED
+    _update_pitch_rate(DT);
+#endif // AP_TECS_PARAGLIDER_ENABLED
 
     // Update the speed estimate using a 2nd order complementary filter
     _update_speed(DT);
@@ -597,7 +610,7 @@ void AP_TECS::_update_height_demand(void)
             }
             const float hgt_dem_alpha = _DT / MAX(_DT + _hgt_dem_tconst, _DT);
             if (max_climb_condition && _hgt_dem > _hgt_dem_prev) {
-                    _max_climb_scaler *= (1.0f - hgt_dem_alpha);
+                _max_climb_scaler *= (1.0f - hgt_dem_alpha);
             } else if (max_descent_condition && _hgt_dem < _hgt_dem_prev) {
                 _max_sink_scaler *= (1.0f - hgt_dem_alpha);
             } else {
@@ -967,6 +980,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     constrain_throttle();
 }
 
+
 void AP_TECS::_detect_bad_descent(void)
 {
     // Don't detect bad descents when gliding, transitioning, or when underspeed.
@@ -1170,7 +1184,7 @@ void AP_TECS::_update_pitch(void)
             _THRmaxf
         );
     }
-#endif
+#endif // HAL_LOGGING_ENABLED
 }
 
 void AP_TECS::_initialise_states(float hgt_afe)
@@ -1304,7 +1318,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _hgt_afe = hgt_afe;
     _load_factor = load_factor;
 
-    // Don't allow height deamnd to continue changing in a direction that saturates vehicle manoeuvre limits
+    // Paraglider mode branches here with simpler logic
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (_pg_params.enable) {
+        _update_paraglider(now, pitch_trim_deg, hgt_afe);
+        return;
+    }
+#endif // AP_TECS_PARAGLIDER_ENABLED
+
+    // Don't allow height demand to continue changing in a direction that saturates vehicle manoeuvre limits
     // if vehicle is unable to follow the demanded climb or descent.
     const bool max_climb_condition = (_pitch_dem_unc > _PITCHmaxf || _thr_clip_status == clipStatus::MAX) &&
                                     !(_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
@@ -1351,6 +1373,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
+
     // Calculate throttle demand - use simple pitch to throttle if no airspeed estimate.
     if (use_airspeed()) {
         _update_throttle_with_airspeed();
@@ -1368,6 +1391,12 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _flags.badDescent = false;
     }
 
+    _log_TECS_state(now);
+
+}
+
+void AP_TECS::_log_TECS_state(uint64_t now)
+{
 #if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
@@ -1414,7 +1443,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             _flags_byte
         );
     }
-#endif
+#endif //HAL_LOGGING_ENABLED
 }
 
 // set minimum throttle override, [-1, -1] range
