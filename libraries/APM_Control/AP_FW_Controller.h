@@ -62,6 +62,9 @@ public:
     // Get angle P gain
     float get_angle_p() const;
 
+    float get_rate_limit_degs() const { return get_positive_rate_limit_degs(); }
+    float get_accel_limit_degss() const { return should_apply_input_shaping() ? accel_limit.get() : 0; }
+
 protected:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
