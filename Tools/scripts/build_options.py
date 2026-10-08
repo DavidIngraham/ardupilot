@@ -282,6 +282,8 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QAUTOTUNE', 'QAUTOTUNE_ENABLED', 'Enable QuadPlane AUTOTUNE', 0, "QUADPLANE"),
     Feature('Plane', 'PLANE_BLACKBOX', 'AP_PLANE_BLACKBOX_LOGGING', 'Enable Blackbox logging', 0, None),
     Feature('Plane', 'AP_TX_TUNING', 'AP_TUNING_ENABLED', 'Enable TX-based tuning parameter adjustments', 0, None),
+    Feature('Plane', 'PLANE_TRAJECTORY', 'AP_PLANE_TRAJECTORY_ENABLED',
+            'Enable experimental waypoint trajectory guidance', 0, None),
     Feature('Plane', 'PLANE_GUIDED_SLEW', 'AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', 'Enable Offboard-guided slew commands', 0, None),  # NOQA: E501
     Feature('Plane', 'PLANE_GLIDER_PULLUP', 'AP_PLANE_GLIDER_PULLUP_ENABLED', 'Enable Glider pullup support', 0, None),
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),

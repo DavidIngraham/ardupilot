@@ -4,6 +4,8 @@ Fly ArduPlane in SITL
 AP_FLAKE8_CLEAN
 '''
 
+import csv
+import json
 import math
 import operator
 import os
@@ -165,6 +167,275 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
 
         self.progress("TAKEOFF COMPLETE")
+
+    @staticmethod
+    def waypoint_trajectory_metrics(rows, home, route, grouped_internal_legs=(), whole_leg=False):
+        """Measure outgoing-track overshoot in the first 150 m after each corner."""
+        positions = [(math.radians(row[2] - home.lat) * 6371000,
+                      math.radians(row[3] - home.lng) * 6371000 * math.cos(math.radians(home.lat)), row[1])
+                     for row in rows]
+        overruns = []
+        measured_corners = []
+        for i in range(1, len(route) - 1):
+            if i + 1 in grouped_internal_legs:
+                continue  # A grouped transition replaces this internal leg; it is not a tracked line.
+            an, ae = route[i - 1]
+            bn, be = route[i]
+            cn, ce = route[i + 1]
+            dn, de = bn - an, be - ae
+            on, oe = cn - bn, ce - be
+            length = math.hypot(on, oe)
+            sign = 1 if dn * oe - de * on > 0 else -1
+            values = []
+            for n, e, seq in positions:
+                along = ((n - bn) * on + (e - be) * oe) / length
+                upper = length if whole_leg else min(150, length * 0.8)
+                # A line join retains its corner command until track capture.
+                # Include the turn before handover as well as the outgoing leg.
+                if seq in (i + 1, i + 2) and -150 <= along <= upper:
+                    values.append(-sign * (on * (e - be) - oe * (n - bn)) / length)
+            if values:
+                overruns.append(max(0, max(values)))
+                measured_corners.append(i + 1)
+        expected = len(route) - 2 - len(set(grouped_internal_legs).intersection(range(2, len(route))))
+        if len(overruns) != expected:
+            raise NotAchievedException("Missing corner measurement")
+        terminal = next((r[0] for r in rows if r[1] == len(route) + 1), None)
+        if terminal is None:
+            raise NotAchievedException("Missing course completion timing")
+        return dict(course_duration_s=terminal - rows[0][0],
+                    duration_s=rows[-1][0] - rows[0][0],
+                    measured_corners=measured_corners, grouped_internal_legs=list(grouped_internal_legs),
+                    corner_overruns_m=overruns, max_overrun_m=max(overruns),
+                    mean_overrun_m=sum(overruns) / len(overruns))
+
+    def WaypointTrajectory(self):
+        """Compare L1 and grouped trajectory guidance on overlapping waypoint turns."""
+        self.fly_waypoint_trajectory_course()
+
+    def WaypointTrajectoryOverfly(self):
+        """Mixed fly-by and pass-by boundaries on short legs, calm and windy."""
+        self.fly_waypoint_trajectory_course(passby={3: 35, 6: 35, 9: 35, 15: 35})
+
+    def WaypointTrajectoryStrongWind(self):
+        """Mixed overfly course in wind equal to half the commanded cruise airspeed."""
+        self.fly_waypoint_trajectory_course(passby={3: 35, 6: 35, 9: 35, 15: 35}, wind_speeds=(10,))
+
+    def WaypointLineTrajectory(self):
+        """Line-to-line planning across ordinary corners and protected overfly boundaries."""
+        self.fly_waypoint_trajectory_course(passby={3: 35, 6: 35, 9: 35, 15: 35},
+                                            wind_speeds=(0, 5, 10), name_prefix="WaypointLineTrajectory")
+
+    def WaypointLineRadiusIndependence(self):
+        """Acceptance radii must not change ordinary line-to-line transitions."""
+        groups = []
+        tracks = []
+        for radius in (1, 200):
+            prefix = "WaypointLineRadius%u" % radius
+            self.fly_waypoint_trajectory_course(passby={3: 35, 6: 35, 9: 35, 15: 35},
+                                                wind_speeds=(5,), name_prefix=prefix,
+                                                controllers=(1,), acceptance_radius=radius)
+            with open(self.buildlogs_path(prefix + '-planned-wind5.json')) as source:
+                metadata = json.load(source)
+                groups.append(metadata['planned_groups'])
+            points = {}
+            with open(self.buildlogs_path(prefix + '-planned-wind5.csv')) as source:
+                for i, sample in enumerate(csv.DictReader(source)):
+                    seq = int(sample['seq'])
+                    if i % 2 or not 2 <= seq <= 18:
+                        continue
+                    north = math.radians(float(sample['latitude_deg']) - metadata['home_lat']) * 6371000
+                    east = (math.radians(float(sample['longitude_deg']) - metadata['home_lng']) *
+                            6371000 * math.cos(math.radians(metadata['home_lat'])))
+                    points.setdefault(seq, []).append((north, east))
+            tracks.append(points)
+        if groups[0] != groups[1]:
+            raise NotAchievedException("Acceptance radius changed planned transitions")
+        worst = 0
+        for a, b in (tracks, tracks[::-1]):
+            for seq in range(2, 19):
+                if seq not in a or seq not in b:
+                    raise NotAchievedException("Missing radius-independence track segment")
+                for north, east in a[seq]:
+                    closest = min(math.hypot(north - n, east - e) for n, e in b[seq])
+                    worst = max(worst, closest)
+        self.progress("Acceptance-radius track difference: %.2fm maximum nearest-sample distance" % worst)
+        if worst > 10:
+            raise NotAchievedException("Acceptance radius changed the flown transitions")
+
+    def fly_waypoint_trajectory_course(self, passby=None, wind_speeds=(0, 5), name_prefix=None,
+                                       controllers=(0, 1), acceptance_radius=50):
+        passby = passby or {}
+        wp = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        route = [
+            (300, 0), (700, 0), (700, 90), (1100, 90),  # short S transition
+            (1100, 500), (1010, 500), (1010, 900),      # mirrored short S
+            (600, 900), (600, 980), (950, 980),         # overlapping same-side turns
+            (950, 600), (400, 600), (450, 250),         # acute corner
+            (-50, 250), (-50, -100), (-400, -100),
+            (-400, -450), (0, -450), (0, -100),
+        ]
+        baseline_metrics = {}
+        for wind_speed in wind_speeds:
+            for enabled in controllers:
+                name = "%s-%s-wind%u" % (name_prefix or ("WaypointTrajectoryOverfly" if passby else "WaypointTrajectory"),
+                                          "planned" if enabled else "L1", wind_speed)
+                self.start_subtest(name)
+                self.context_push()
+                rows = []
+                metrics = None
+                planned_groups = []
+                fallbacks = []
+                protected_crossings = {}
+                home = self.home_position_as_location()
+                try:
+                    self.set_rc_default()
+                    self.set_parameters({
+                        "NAVTP_ENABLE": enabled,
+                        "NAVL1_PERIOD": 8,
+                        "NAVL1_DAMPING": 0.9,
+                        "WP_RADIUS": 50,
+                        "WP_MAX_RADIUS": 0,
+                        "ROLL_LIMIT_DEG": 45,
+                        "AIRSPEED_CRUISE": 20,
+                        "SIM_WIND_SPD": 0,
+                        "SIM_WIND_TURB": 0,
+                    })
+                    self.takeoff(alt=100, mode="TAKEOFF")
+                    self.set_rc(3, 1500)
+                    home = self.home_position_as_location()
+                    items = self.create_simple_relloc_mission(
+                        home, [(wp, n, e, 100) for n, e in route] + [
+                            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 1, 1, 100)])
+                    for item in items[1:-1]:
+                        item.param2 = 50
+                    for item in items[2:-2]:
+                        item.param2 = acceptance_radius
+                    for seq, distance in passby.items():
+                        items[seq].param2 = 0  # Require passage of the extended finish line.
+                        items[seq].param3 = distance
+                    items[-1].param3 = 100
+                    self.check_mission_upload_download(items)
+                    self.set_current_waypoint(1)
+                    self.set_parameters({"SIM_WIND_SPD": wind_speed, "SIM_WIND_DIR": 45})
+                    self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
+                    self.context_set_message_rate_hz('ATTITUDE', 10)
+                    self.context_set_message_rate_hz('MISSION_CURRENT', 10)
+                    last_seq = [1]
+
+                    def observe(mav, message):
+                        kind = message.get_type()
+                        if kind == 'STATUSTEXT':
+                            if "Trajectory WP" in message.text:
+                                planned_groups.append(message.text)
+                            elif "Trajectory " in message.text and "fallback" in message.text:
+                                fallbacks.append(message.text)
+                        if kind != 'GLOBAL_POSITION_INT':
+                            return
+                        attitude = mav.messages.get('ATTITUDE')
+                        mission = mav.messages.get('MISSION_CURRENT')
+                        if attitude is None or mission is None:
+                            return
+                        seq = mission.seq
+                        if seq < last_seq[0] or seq > last_seq[0] + 1:
+                            raise NotAchievedException("Unexpected mission progression %u to %u" % (last_seq[0], seq))
+                        if seq > last_seq[0] and last_seq[0] in passby and rows:
+                            previous = last_seq[0]
+                            an, ae = route[previous - 2]
+                            bn, be = route[previous - 1]
+                            dn, de = bn - an, be - ae
+                            n = math.radians(rows[-1][2] - home.lat) * 6371000
+                            e = math.radians(rows[-1][3] - home.lng) * 6371000 * math.cos(math.radians(home.lat))
+                            beyond = ((n - bn) * dn + (e - be) * de) / math.hypot(dn, de)
+                            protected_crossings[previous] = beyond
+                            # Independent 10 Hz mission/position messages can lag each other.
+                            if beyond < passby[previous] - 10:
+                                raise NotAchievedException("Protected WP %u shortcut: %.1fm beyond, required %um" %
+                                                           (previous, beyond, passby[previous]))
+                        last_seq[0] = seq
+                        altitude = message.relative_alt * 0.001
+                        values = (attitude.roll, attitude.pitch, attitude.yaw, altitude)
+                        if not all(math.isfinite(v) for v in values):
+                            raise NotAchievedException("Non-finite flight state")
+                        if altitude < 60 or altitude > 150 or abs(math.degrees(attitude.roll)) > 65:
+                            raise NotAchievedException("Trajectory flight envelope exceeded: alt=%.1f bank=%.1f" %
+                                                       (altitude, math.degrees(attitude.roll)))
+                        rows.append((message.time_boot_ms * 0.001, seq, message.lat * 1e-7,
+                                     message.lon * 1e-7, altitude, math.degrees(attitude.roll),
+                                     message.vx * 0.01, message.vy * 0.01))
+
+                    self.install_message_hook_context(observe)
+                    self.change_mode('AUTO')
+                    end_seq = len(route) + 1
+                    start = self.get_sim_time()
+                    while self.get_sim_time_cached() - start < 1000:
+                        message = self.assert_receive_message('MISSION_CURRENT', timeout=10)
+                        if self.mav.flightmode != 'AUTO':
+                            raise NotAchievedException("Left AUTO during trajectory mission")
+                        self.assert_armed()
+                        if message.seq == end_seq:
+                            break
+                    else:
+                        raise AutoTestTimeoutException("Waypoint torture mission stalled")
+                    self.delay_sim_time(15, reason="Observe terminal loiter handover")
+                    if enabled and not passby and not any("corners 2" in x or "corners 3" in x for x in planned_groups):
+                        raise NotAchievedException("No grouped transition exercised")
+                    if set(protected_crossings) != set(passby):
+                        raise NotAchievedException("Missing protected waypoint passage measurement")
+                    if enabled and passby:
+                        if not planned_groups:
+                            raise NotAchievedException("No planned fly-by transitions exercised")
+                        boundary_exercised = False
+                        for group in planned_groups:
+                            words = group.split()
+                            first, count = int(words[2]), int(words[4])
+                            boundary_exercised |= first + count in passby
+                            if any(seq in range(first, first + count) for seq in passby):
+                                raise NotAchievedException("Planner rounded a protected waypoint")
+                        if wind_speed == 0 and not boundary_exercised:
+                            raise NotAchievedException("No incoming planned transition to a protected waypoint exercised")
+                    if enabled and name_prefix and name_prefix.startswith("WaypointLine"):
+                        covered = set()
+                        for group in planned_groups:
+                            words = group.split()
+                            first, count = int(words[2]), int(words[4])
+                            covered.update(range(first, first + count))
+                        if not {12, 13, 14}.issubset(covered):
+                            raise NotAchievedException("Line transitions at WP12-14 fell back to radius guidance")
+                    grouped_internal = set()
+                    line_course = name_prefix and name_prefix.startswith("WaypointLine")
+                    if line_course:
+                        for group in planned_groups:
+                            words = group.split()
+                            first, count = int(words[2]), int(words[4])
+                            grouped_internal.update(range(first, first + count - 1))
+                    metrics = self.waypoint_trajectory_metrics(rows, home, route,
+                                                               grouped_internal_legs=sorted(grouped_internal),
+                                                               whole_leg=bool(line_course))
+                    self.progress("Trajectory metrics: %s" % metrics)
+                    self.progress("Trajectory groups: %s; fallbacks: %s" % (planned_groups, fallbacks))
+                    if not enabled:
+                        baseline_metrics[wind_speed] = metrics
+                    elif wind_speed in baseline_metrics:
+                        baseline = baseline_metrics[wind_speed]
+                        if metrics['course_duration_s'] > baseline['course_duration_s'] * 1.25:
+                            raise NotAchievedException("Trajectory added excessive flight time")
+                        if not passby and metrics['mean_overrun_m'] > baseline['mean_overrun_m'] * 0.95:
+                            raise NotAchievedException("Trajectory did not reduce mean corner overshoot")
+                finally:
+                    with open(self.buildlogs_path(name + '.csv'), 'w') as output:
+                        writer = csv.writer(output)
+                        writer.writerow(('time_s', 'seq', 'latitude_deg', 'longitude_deg', 'altitude_m',
+                                         'roll_deg', 'vn_mps', 've_mps'))
+                        writer.writerows(rows)
+                    with open(self.buildlogs_path(name + '.json'), 'w') as output:
+                        json.dump(dict(route=route, home_lat=home.lat, home_lng=home.lng,
+                                       wind_speed=wind_speed, wind_direction=45, enabled=enabled,
+                                       acceptance_radius=acceptance_radius, passby_distances=passby,
+                                       protected_crossings_m=protected_crossings, planned_groups=planned_groups,
+                                       fallbacks=fallbacks, metrics=metrics), output, indent=2)
+                    self.context_pop()
+                    self.reboot_sitl(force=True)
 
     def fly_left_circuit(self):
         """Fly a left circuit, 200m on a side."""
@@ -10435,6 +10706,11 @@ return update()
             self.DO_CHANGE_SPEED,
             self.GuidedRequest,
             self.MainFlight,
+            self.WaypointTrajectory,
+            self.WaypointTrajectoryOverfly,
+            self.WaypointTrajectoryStrongWind,
+            self.WaypointLineTrajectory,
+            self.WaypointLineRadiusIndependence,
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
