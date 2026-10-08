@@ -931,6 +931,9 @@ private:
     void stabilize();
     void calc_throttle();
     void calc_nav_roll();
+#if AP_PLANE_TRAJECTORY_ENABLED
+    bool update_waypoint_trajectory(const AP_Mission::Mission_Command &cmd, bool &complete);
+#endif
     void calc_nav_pitch();
     float calc_speed_scaler(void);
     float get_speed_scaler(void) const { return surface_speed_scaler; }

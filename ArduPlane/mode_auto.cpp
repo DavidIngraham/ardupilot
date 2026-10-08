@@ -3,6 +3,9 @@
 
 bool ModeAuto::_enter()
 {
+#if AP_PLANE_TRAJECTORY_ENABLED
+    plane.g2.trajectory.reset();
+#endif
 #if HAL_QUADPLANE_ENABLED
     // check if we should refuse auto mode due to a missing takeoff in
     // guided_wait_takeoff state
@@ -50,6 +53,9 @@ bool ModeAuto::_enter()
 
 void ModeAuto::_exit()
 {
+#if AP_PLANE_TRAJECTORY_ENABLED
+    plane.g2.trajectory.reset();
+#endif
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
 

@@ -481,3 +481,144 @@ bool Plane::reached_loiter_target(void)
 #endif
     return nav_controller->reached_loiter_target();
 }
+
+#if AP_PLANE_TRAJECTORY_ENABLED
+bool Plane::update_waypoint_trajectory(const AP_Mission::Mission_Command &cmd, bool &complete)
+{
+    auto &trajectory = g2.trajectory;
+    if (!trajectory.enabled() || control_mode != &mode_auto || !auto_state.crosstrack ||
+        flight_stage != AP_FixedWing::FlightStage::NORMAL ||
+        cmd.content.location.terrain_alt) {
+        trajectory.reset();
+        return false;
+    }
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_auto()) {
+        trajectory.reset();
+        return false;
+    }
+#endif
+    // Plane param3 is a distance beyond the waypoint, not a Boolean flag.
+    // Finish an incoming transition only when this waypoint is its exit target.
+    // Never round a protected waypoint, including one edited during flight.
+    const bool passby = HIGHBYTE(cmd.p1) != 0;
+    if (passby && !trajectory.exit_target(cmd.index)) {
+        trajectory.reset();
+        return false;
+    }
+    if (trajectory.planned() && !trajectory.matches(cmd.index, next_WP_loc)) {
+        trajectory.reset();
+    }
+    const Vector2f groundspeed = ahrs.groundspeed_vector();
+    const float bank_deg = ahrs.roll_sensor * 0.01f;
+    if (!trajectory.configure_response(L1_controller.get_period(), L1_controller.get_damping(),
+                                       rollController.get_angle_p(), rollController.tau().get(),
+                                       rollController.get_rate_limit_degs(),
+                                       rollController.get_accel_limit_degss(), roll_limit_cd * 0.01f)) {
+        trajectory.reset();
+        return false;
+    }
+    bool state_entry = trajectory.entry_mismatch(current_loc, groundspeed, bank_deg);
+    if (state_entry) {
+        trajectory.reset();
+    }
+    float bank = 0;
+    if (!state_entry && trajectory.update(current_loc, groundspeed, cmd.index, bank, complete)) {
+        return true;
+    }
+    if (passby) {
+        trajectory.reset();
+        return false; // Legacy guidance enforces the extended finish line.
+    }
+    if (trajectory.planned()) {
+        // Track the incoming line while waiting for turn entry, but do not
+        // let legacy acceptance-radius checks advance the mission early.
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        return true;
+    }
+    if (trajectory.attempted(cmd.index)) {
+        return false;
+    }
+    float true_airspeed = 0;
+    Vector3f wind;
+    if (!ahrs.airspeed_TAS(true_airspeed) || !ahrs.get_wind(wind) || true_airspeed < 5) {
+        return false;
+    }
+    Location points[5]{prev_WP_loc, next_WP_loc};
+    uint8_t boundary_extension[4]{};
+    uint8_t available = 1;
+    for (uint8_t i = 1; i <= 3; i++) {
+        AP_Mission::Mission_Command next;
+        // Do not plan across actions, jumps, takeoff, landing, loiters or altitude changes.
+        if (!mission.read_cmd_from_storage(cmd.index + i, next) ||
+            next.id != MAV_CMD_NAV_WAYPOINT ||
+            next.content.location.alt != cmd.content.location.alt ||
+            next.content.location.relative_alt != cmd.content.location.relative_alt ||
+            next.content.location.terrain_alt != cmd.content.location.terrain_alt ||
+            (next.content.location.lat == 0 && next.content.location.lng == 0)) {
+            break;
+        }
+        points[i + 1] = next.content.location;
+        if (!points[i + 1].change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            break;
+        }
+        available++;
+        boundary_extension[i] = HIGHBYTE(next.p1);
+        // Include a pass-by waypoint as the outgoing boundary, but never
+        // merge it into the rounded corners or look through it.
+        if (HIGHBYTE(next.p1) != 0) {
+            break;
+        }
+    }
+    if (available < 2 || prev_WP_loc.get_distance(next_WP_loc) < 20) {
+        return false;
+    }
+    const float first_angle = wrap_PI(points[1].get_bearing(points[2]) - points[0].get_bearing(points[1]));
+    if (fabsf(first_angle) < radians(10)) {
+        return false;
+    }
+    uint8_t corners = 1;
+    while (corners < MIN(uint8_t(3), uint8_t(available - 1))) {
+        float entry = 0;
+        float exit = 0;
+        float next_entry = 0;
+        float next_exit = 0;
+        const Vector2f horizontal_wind(wind.x, wind.y);
+        if (!trajectory.turn_distances(points[corners - 1], points[corners], points[corners + 1],
+                                       horizontal_wind, true_airspeed, roll_limit_cd * 0.01f, entry, exit) ||
+            !trajectory.turn_distances(points[corners], points[corners + 1], points[corners + 2],
+                                       horizontal_wind, true_airspeed, roll_limit_cd * 0.01f, next_entry, next_exit)) {
+            break;
+        }
+        const float needed = exit + next_entry + true_airspeed * 2 * trajectory.transition_time();
+        if (points[corners].get_distance(points[corners + 1]) >= needed) {
+            break;
+        }
+        corners++;
+    }
+    bool planned = trajectory.plan(points, corners, cmd.index, Vector2f(wind.x, wind.y), true_airspeed,
+                                   roll_limit_cd * 0.01f, state_entry ? &current_loc : nullptr,
+                                   state_entry ? &groundspeed : nullptr, bank_deg, boundary_extension[corners]);
+    if (planned && !state_entry && trajectory.entry_mismatch(current_loc, groundspeed, bank_deg)) {
+        state_entry = true;
+        planned = trajectory.plan(points, corners, cmd.index, Vector2f(wind.x, wind.y), true_airspeed,
+                                  roll_limit_cd * 0.01f, &current_loc, &groundspeed, bank_deg, boundary_extension[corners]);
+    }
+    if (!planned) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Trajectory L1 fallback WP %u", cmd.index);
+        return false;
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Trajectory WP %u corners %u", cmd.index, corners);
+    if (state_entry) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trajectory state entry WP %u", cmd.index);
+    }
+    if (trajectory.update(current_loc, ahrs.groundspeed_vector(), cmd.index, bank, complete)) {
+        return true;
+    }
+    if (trajectory.planned()) {
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+        return true;
+    }
+    return false;
+}
+#endif // AP_PLANE_TRAJECTORY_ENABLED

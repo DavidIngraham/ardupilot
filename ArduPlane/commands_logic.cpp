@@ -658,6 +658,13 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+#if AP_PLANE_TRAJECTORY_ENABLED
+    bool trajectory_complete = false;
+    if (update_waypoint_trajectory(cmd, trajectory_complete)) {
+        return trajectory_complete;
+    }
+#endif
+
     if (auto_state.crosstrack) {
         nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
     } else {

@@ -230,16 +230,26 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
 #endif
     {
         const AP_Navigation *nav_controller = plane.nav_controller;
+        float xtrack = nav_controller->crosstrack_error_m();
+        int32_t nav_bearing = nav_controller->nav_bearing_cd();
+        int32_t target_bearing = nav_controller->target_bearing_cd();
+#if AP_PLANE_TRAJECTORY_ENABLED
+        if (plane.g2.trajectory.enabled() && plane.g2.trajectory.active()) {
+            xtrack = plane.g2.trajectory.crosstrack_error_m();
+            nav_bearing = plane.g2.trajectory.nav_bearing_cd();
+            target_bearing = plane.current_loc.get_bearing_to(plane.next_WP_loc);
+        }
+#endif
         mavlink_msg_nav_controller_output_send(
             chan,
             plane.nav_roll_cd * 0.01,
             plane.nav_pitch_cd * 0.01,
-            nav_controller->nav_bearing_cd() * 0.01,
-            nav_controller->target_bearing_cd() * 0.01,
+            nav_bearing * 0.01,
+            target_bearing * 0.01,
             MIN(plane.auto_state.wp_distance, UINT16_MAX),
             plane.calc_altitude_error_cm() * 0.01,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
-            nav_controller->crosstrack_error_m());
+            xtrack);
     }
 }
 

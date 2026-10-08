@@ -645,6 +645,12 @@ void Plane::calc_nav_pitch()
 void Plane::calc_nav_roll()
 {
     int32_t commanded_roll = nav_controller->nav_roll_cd();
+#if AP_PLANE_TRAJECTORY_ENABLED
+    if (control_mode == &mode_auto && mission.get_current_nav_cmd().id == MAV_CMD_NAV_WAYPOINT &&
+        g2.trajectory.enabled() && g2.trajectory.active()) {
+        commanded_roll = g2.trajectory.bank_cd();
+    }
+#endif
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
 }

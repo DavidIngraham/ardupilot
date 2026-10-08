@@ -49,7 +49,15 @@ void Plane::set_next_WP(const Location &loc)
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
+    bool planned_exit = false;
+#if AP_PLANE_TRAJECTORY_ENABLED
+    const uint16_t index = mission.get_current_nav_index();
+    planned_exit = control_mode == &mode_auto && g2.trajectory.exit_target(index) &&
+                   g2.trajectory.matches(index, next_WP_loc);
+#endif
+    // A captured turn may finish beyond the nominal corner. Keep the original
+    // leg bearing, including the bearing used for an explicit pass-by distance.
+    if (!planned_exit && current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
         prev_WP_loc = current_loc;
     }
 

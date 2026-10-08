@@ -897,6 +897,12 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
         return true;
     }
 #endif
+#if AP_PLANE_TRAJECTORY_ENABLED
+    if (g2.trajectory.enabled() && g2.trajectory.active()) {
+        xtrack_error = g2.trajectory.crosstrack_error_m();
+        return true;
+    }
+#endif
     xtrack_error = nav_controller->crosstrack_error_m();
     return true;
 }

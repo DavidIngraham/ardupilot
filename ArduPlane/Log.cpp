@@ -206,15 +206,27 @@ struct PACKED log_Nav_Tuning {
 // Write a navigation tuning packet
 void Plane::Log_Write_Nav_Tuning()
 {
+    float xtrack = nav_controller->crosstrack_error_m();
+    float xtrack_i = nav_controller->crosstrack_error_integrator();
+    int32_t nav_bearing = nav_controller->nav_bearing_cd();
+    int32_t target_bearing = nav_controller->target_bearing_cd();
+#if AP_PLANE_TRAJECTORY_ENABLED
+    if (g2.trajectory.enabled() && g2.trajectory.active()) {
+        xtrack = g2.trajectory.crosstrack_error_m();
+        xtrack_i = 0;
+        nav_bearing = g2.trajectory.nav_bearing_cd();
+        target_bearing = current_loc.get_bearing_to(next_WP_loc);
+    }
+#endif
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
         wp_distance         : auto_state.wp_distance,
-        target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
-        nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
+        target_bearing_cd   : (int16_t)target_bearing,
+        nav_bearing_cd      : (int16_t)nav_bearing,
         altitude_error_cm   : (int16_t)plane.calc_altitude_error_cm(),
-        xtrack_error        : nav_controller->crosstrack_error_m(),
-        xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
+        xtrack_error        : xtrack,
+        xtrack_error_i      : xtrack_i,
         airspeed_error      : airspeed_error,
         target_lat          : next_WP_loc.lat,
         target_lng          : next_WP_loc.lng,

@@ -1298,6 +1298,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
 #endif
 
+#if AP_PLANE_TRAJECTORY_ENABLED
+    // @Group: NAVTP_
+    // @Path: PlaneTrajectory.cpp
+    AP_SUBGROUPINFO(trajectory, "NAVTP_", 42, ParametersG2, AP_PlaneTrajectory),
+#endif
+
     AP_GROUPEND
 };
 

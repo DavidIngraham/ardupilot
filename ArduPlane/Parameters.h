@@ -1,4 +1,5 @@
 #pragma once
+#include "PlaneTrajectory.h"
 
 #define AP_PARAM_VEHICLE_NAME plane
 
@@ -477,6 +478,9 @@ public:
  */
 class ParametersG2 {
 public:
+#if AP_PLANE_TRAJECTORY_ENABLED
+    AP_PlaneTrajectory trajectory;
+#endif
     ParametersG2(void);
 
     // var_info for holding Parameter information
