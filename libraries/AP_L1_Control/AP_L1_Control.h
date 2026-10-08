@@ -60,6 +60,9 @@ public:
         _L1_period.set_default(period);
     }
 
+    float get_period() const { return _L1_period.get(); }
+    float get_damping() const { return _L1_damping.get(); }
+
     void set_data_is_stale(void) override {
         _data_is_stale = true;
     }
