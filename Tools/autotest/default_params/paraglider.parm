@@ -18,10 +18,10 @@ PTCH2SRV_RLL,   0
 
 # Set up Pseudo Roll-Angle controller using Rate FF terms
 RLL2SRV_RMAX     30
-RLL2SRV_TCONST   1.000000
+RLL2SRV_TCONST   0.400000
 RLL_RATE_D       0.000000
-RLL_RATE_D_FF    0.050000
-RLL_RATE_FF      1.000000
+RLL_RATE_D_FF    0.087500
+RLL_RATE_FF      1.320000
 RLL_RATE_FLTD    10.000000
 RLL_RATE_FLTE    0.000000
 RLL_RATE_FLTT    1.000000
@@ -38,9 +38,15 @@ RLL_RATE_P      0
 RLL_RATE_I      0
 RLL_RATE_D      0
 
-# L1 guidance: reduce overshoot with the provisional paraglider dynamics
-NAVL1_DAMPING   0.85
-NAVL1_PERIOD    17
+# Direct heading-rate steering, with coupled roll-rate damping
+PG_TURN_ENABLE  1
+PG_TURN_RMAX    25
+
+# L1 guidance and radii: validated by the extended paraglider AUTO mission
+NAVL1_DAMPING   1.0
+NAVL1_PERIOD    8
+WP_RADIUS      22
+WP_LOITER_RAD  25
 
 # Enable TECS Paraglider
 TECS_PG_ENABLE   1
