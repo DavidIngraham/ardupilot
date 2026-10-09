@@ -1,0 +1,13 @@
+{
+  "_description": "Provisional small-scale paraglider with a free canopy/payload pitch joint; roll and yaw remain shared. Geometry is not flight-identified.",
+  "pitch_joint_enabled": 1,
+  "canopy_mass_kg": 0.19,
+  "payload_pitch_inertia": 0.03,
+  "canopy_pitch_inertia": 0.025,
+  "payload_hinge_z_m": 0.35,
+  "canopy_hinge_x_m": -0.3,
+  "canopy_hinge_z_m": -0.85,
+  "thrust_payload_z_m": -0.1,
+  "pitch_joint_damping": 0.015,
+  "pitch_joint_stiffness": 0
+}
