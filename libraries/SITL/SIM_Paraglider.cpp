@@ -17,6 +17,7 @@
 #include "SIM_Paraglider.h"
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
@@ -75,6 +76,7 @@ Paraglider::Paraglider(const char *frame_str) : Aircraft(frame_str)
 
     if (strstr(frame_str, "-throw")) {
         have_launcher = true;
+        launch_guide_attitude = true;
         launch_accel = 10.0f;
         launch_time = 2.0f;
     }
@@ -118,7 +120,7 @@ void Paraglider::eval_parafoil_coeffs(float alpha_rad,
     t = smoothstep(t);
 
     // Flat-plate-ish lift shape: sin(2a), scaled to match CL_lin_cap at stall
-    const float denom = MAX(0.05f, fabsf(sinf(2.0f * alpha_eff_out)));
+    const float denom = clamp_preserve_sign(sinf(2.0f * alpha_eff_out), 0.05f);
     const float CL_fp = CL_lin_cap * (sinf(2.0f * alpha_rad) / denom);
 
     // Flat-plate-ish drag shape: sin^2(a) to CD_90, continuous at stall
@@ -148,13 +150,22 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
     const Vector3f omega_bf = gyro;
 
     // Fuselage drag (computed in body, applied opposite local velocity vector)
-    const Vector3f vF_bf = vB_bf + (omega_bf % model.S_FB_B);
+    Vector3f rF = model.S_FB_B;
+    Vector3f rP = model.S_PB_B;
+    Vector3f relative_velocity{};
+    if (pitch_joint_enabled()) {
+        pitch_geometry(rF, rP);
+        const Vector3f b = rot_y(joint_pitch_rad) * Vector3f{model.canopy_hinge_x_m, 0, model.canopy_hinge_z_m};
+        relative_velocity = Vector3f{0, joint_pitch_rate, 0} % b;
+    }
+    const float canopy_fraction = model.canopy_mass_kg / model.mass_kg;
+    const Vector3f vF_bf = vB_bf + (omega_bf % rF) - relative_velocity * canopy_fraction;
 
     const float uF = clamp_preserve_sign(vF_bf.x, 0.01f);
     const float wF = vF_bf.z;
 
-    // Stevens/Lewis/Johnson convention with z-down: alpha = atan2(-w, u)
-    const float alpha_F = atan2f(-wF, uF);
+    // Body axes are x-forward, z-down: positive w gives positive AoA.
+    const float alpha_F = atan2f(wF, uF);
     const float CD_F = model.aero.CD0_F + model.aero.CDa_F * sq(alpha_F);
 
     const float VF = vF_bf.length();
@@ -167,14 +178,15 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
     }
 
     // ---------- Body <-> Parafoil frame ----------
-    // We want a positive canopy_pitch_rad to correspond to a positive AoA in parafoil frame
-    // for a forward body velocity. Using the convention alpha = atan2(-w, u),
-    // mapping body->parafoil with +chi gives w<0 for u>0, so alpha>0.
-    const Matrix3f R_pf_b = rot_y(model.canopy_pitch_rad);   // body -> parafoil
+    // A positive incidence or joint angle pitches the canopy nose-up.
+    // Transform body velocity into canopy axes with the inverse rotation;
+    // positive canopy-frame w then gives positive angle of attack.
+    const float canopy_pitch = model.canopy_pitch_rad + (pitch_joint_enabled() ? joint_pitch_rad : 0);
+    const Matrix3f R_pf_b = rot_y(-canopy_pitch);            // body -> parafoil
     const Matrix3f R_b_pf = R_pf_b.transposed();             // parafoil -> body
 
     // Velocity at parafoil mass center, expressed in parafoil frame
-    const Vector3f vP_bf = vB_bf + (omega_bf % model.S_PB_B);
+    const Vector3f vP_bf = vB_bf + (omega_bf % rP) + relative_velocity * (1 - canopy_fraction);
     const Vector3f vP_pf = R_pf_b * vP_bf;
 
     const float uP = vP_pf.x;
@@ -184,10 +196,10 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
 
     out.V_pf = V;
 
-    // AoA / sideslip (Stevens/Lewis/Johnson style, with z-down)
+    // AoA / sideslip in x-forward, y-right, z-down canopy axes.
     if (V > 0.1f) {
         const float u_safe = clamp_preserve_sign(uP, 0.01f);
-        out.alpha_pf_rad = atan2f(-wP, u_safe);
+        out.alpha_pf_rad = atan2f(wP, u_safe);
         out.beta_pf_rad = atan2f(vP, sqrtf(sq(uP) + sq(wP)));
     } else {
         out.alpha_pf_rad = 0.0f;
@@ -213,20 +225,20 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
         const float D = qbar * model.A_para_m2 * CD;
 
         // Wind axes force: x along velocity (same direction as vP_pf),
-        // z down in the plane defined by velocity and parafoil +z (down).
+        // z normal to airflow and canopy span, pointing down in forward flight.
         // Aerodynamic force in wind axes: [-D, 0, -L]
         const Vector3f F_w{-D, 0.0f, -L};
 
         // Build wind->parafoil DCM from velocity direction (robust, avoids rotation-order pitfalls)
         Vector3f x_w = vP_pf * (1.0f / V);             // wind x axis in parafoil coords
-        Vector3f z_ref{0.0f, 0.0f, 1.0f};              // parafoil down axis
-        Vector3f z_w = z_ref - x_w * (z_ref * x_w);    // component of down orthogonal to x_w
-
-        const float z_w_len = z_w.length();
-        if (z_w_len < 1.0e-3f) {
-            // Degenerate near-vertical flight: choose an alternate reference
-            Vector3f y_ref{0.0f, 1.0f, 0.0f};
-            z_w = y_ref - x_w * (y_ref * x_w);
+        // Lift is perpendicular to both airflow and the canopy span.
+        // Projecting the down axis onto airflow's normal plane instead
+        // introduces an artificial spanwise lift force in sideslip.
+        Vector3f z_w = x_w % Vector3f{0, 1, 0};
+        if (z_w.length() < 1.0e-3f) {
+            // Spanwise flow has no uniquely defined lift plane.
+            const Vector3f down{0, 0, 1};
+            z_w = down - x_w * (down * x_w);
         }
 
         z_w = z_w * (1.0f / MAX(1.0e-3f, z_w.length()));
@@ -298,7 +310,7 @@ Vector3f Paraglider::compute_torque_bf(float brake_left_rad,
     const float V = F.V_pf;
 
     const float p = gyro.x;
-    const float q = gyro.y;
+    const float q = gyro.y + (pitch_joint_enabled() ? joint_pitch_rate : 0);
     const float r = gyro.z;
 
     float phi = 0.0f;
@@ -342,21 +354,81 @@ Vector3f Paraglider::compute_torque_bf(float brake_left_rad,
     }
 
     // Thrust torque about CG: r_MB x F_thrust
-    const Vector3f r_MB_bf = model.S_FB_B + model.S_MF_F;
+    Vector3f rF = model.S_FB_B;
+    Vector3f rP = model.S_PB_B;
+    if (pitch_joint_enabled()) {
+        pitch_geometry(rF, rP);
+    }
+    const Vector3f motor_arm = pitch_joint_enabled() ? Vector3f{0, 0, model.thrust_payload_z_m} : model.S_MF_F;
+    const Vector3f r_MB_bf = rF + motor_arm;
     const Vector3f M_thrust_bf = r_MB_bf % F.F_thrust_bf;
 
     // Propeller reaction torque is separate from the thrust lever-arm moment.
     const Vector3f M_prop_bf{model.prop_torque_per_thrust_m * F.F_thrust_bf.x, 0.0f, 0.0f};
 
     // Lever arms from forces away from CG
-    const Vector3f M_fuse_arm_bf = model.S_FB_B % F.F_fuse_bf;
-    const Vector3f M_para_arm_bf = model.S_PB_B % (F.F_para_bf + F.F_brake_bf);
+    const Vector3f M_fuse_arm_bf = rF % F.F_fuse_bf;
+    const Vector3f M_para_arm_bf = rP % (F.F_para_bf + F.F_brake_bf);
 
     // Roll damping
     const Vector3f M_roll_damp_bf{-model.roll_damp_Nm_per_rps * p, 0.0f, 0.0f};
 
 
     return M_aero_bf + M_brake_bf + M_thrust_bf + M_fuse_arm_bf + M_para_arm_bf + M_roll_damp_bf + M_prop_bf;
+}
+
+// Eliminate hinge translation using the system CG. For hinge-to-CG
+// vectors a (payload) and b (canopy), kinetic energy is
+// 1/2 Ip*qp^2 + 1/2 Ic*qc^2 + 1/2 mu*|qp Yxa - qc Yxb|^2.
+// Uniform gravity cancels from these relative equations in free flight;
+// canopy lift supplies the suspension loading and pendulum restoring force.
+void Paraglider::pitch_geometry(Vector3f &payload_arm, Vector3f &canopy_arm) const
+{
+    const Vector3f a{0, 0, model.payload_hinge_z_m};
+    const Vector3f b = rot_y(joint_pitch_rad) * Vector3f{model.canopy_hinge_x_m, 0, model.canopy_hinge_z_m};
+    payload_arm = (a - b) * (model.canopy_mass_kg / model.mass_kg);
+    canopy_arm = (b - a) * (1 - model.canopy_mass_kg / model.mass_kg);
+}
+
+void Paraglider::pitch_accelerations(const ForceBreakdown &F, float &payload_accel, float &canopy_accel) const
+{
+    const float fraction = model.canopy_mass_kg / model.mass_kg;
+    const float mu = model.canopy_mass_kg * (1 - fraction);
+    const Vector3f a{0, 0, model.payload_hinge_z_m};
+    const Vector3f b = rot_y(joint_pitch_rad) * Vector3f{model.canopy_hinge_x_m, 0, model.canopy_hinge_z_m};
+    const Vector3f da{a.z, 0, -a.x};
+    const Vector3f db{b.z, 0, -b.x};
+    const float qp = gyro.y;
+    const float qc = qp + joint_pitch_rate;
+    const Vector3f payload_force = F.F_fuse_bf + F.F_thrust_bf;
+    const Vector3f canopy_force = F.F_para_bf + F.F_brake_bf;
+    const Vector3f differential_force = payload_force * fraction - canopy_force * (1 - fraction);
+    const float joint_torque = model.pitch_joint_stiffness * joint_pitch_rad +
+                               model.pitch_joint_damping * joint_pitch_rate;
+    float Qp = da * differential_force + model.thrust_payload_z_m * F.F_thrust_bf.x + joint_torque;
+    float Qc = -(db * differential_force) - joint_torque;
+    if (F.V_pf > 0.1f) {
+        const float qS = 0.5f * air_density * model.A_para_m2 * sq(F.V_pf);
+        Qc += qS * (model.aero.Cmq * sq(model.c_chord_m) * qc / (2 * F.V_pf) +
+                   model.aero.Cm0 * model.c_chord_m +
+                   model.aero.Cmalpha * model.c_chord_m * F.alpha_eff_rad);
+    }
+    // Centrifugal terms from the configuration-dependent mass matrix.
+    Qp -= mu * (da * b) * sq(qc);
+    Qc -= mu * (db * a) * sq(qp);
+    const float m11 = model.payload_pitch_inertia + mu * (da * da);
+    const float m22 = model.canopy_pitch_inertia + mu * (db * db);
+    const float m12 = -mu * (da * db);
+    if (model.pitch_joint_locked > 0.5f) {
+        // Constraint torque cancels between bodies. Use the articulated
+        // model's geometry and inertia, rather than the legacy rigid model.
+        payload_accel = (Qp + Qc) / (m11 + m22 + 2 * m12);
+        canopy_accel = payload_accel;
+        return;
+    }
+    const float det = m11 * m22 - sq(m12);
+    payload_accel = (m22 * Qp - m12 * Qc) / det;
+    canopy_accel = (m11 * Qc - m12 * Qp) / det;
 }
 
 Vector3f Paraglider::inertia_mul(const Vector3f &w) const
@@ -401,20 +473,32 @@ void Paraglider::calculate_forces(const struct sitl_input &input, Vector3f &rot_
     Vector3f force_bf = F.F_fuse_bf + F.F_para_bf + F.F_brake_bf + F.F_thrust_bf;
     const Vector3f torque_bf = compute_torque_bf(brake_left_rad, brake_right_rad, F);
 
+    bool launch_guided = false;
     if (have_launcher) {
         const bool launch_triggered = input.servos[6] > 1700;
         if (launch_triggered) {
             const uint64_t now = AP_HAL::millis64();
-            if (launch_start_ms == 0) {
+            if (!launch_started) {
                 launch_start_ms = now;
+                launch_started = true;
+                launch_released = false;
             }
             const uint64_t launch_ms = uint64_t(launch_time * 1000.0f);
-            if (now - launch_start_ms < launch_ms) {
+            // Release the synthetic guide once free-flight forces support
+            // the weight, rather than continuing to add launch energy.
+            if (launch_guide_attitude && !on_ground() &&
+                (dcm * force_bf).z <= -mass * GRAVITY_MSS) {
+                launch_released = true;
+            }
+            if (!launch_released && now - launch_start_ms < launch_ms) {
+                launch_guided = launch_guide_attitude;
                 force_bf.x += mass * launch_accel;
                 force_bf.z -= mass * launch_accel / 3.0f; // negative z is up
             }
         } else {
             launch_start_ms = 0;
+            launch_started = false;
+            launch_released = false;
         }
     }
 
@@ -426,6 +510,32 @@ void Paraglider::calculate_forces(const struct sitl_input &input, Vector3f &rot_
     const Vector3f net_tau = torque_bf - (omega % Iomega);
 
     rot_accel = inertia_inv_mul(net_tau);
+    if (pitch_joint_enabled()) {
+        float canopy_accel;
+        pitch_accelerations(F, rot_accel.y, canopy_accel);
+        joint_pitch_accel = canopy_accel - rot_accel.y;
+        // Keep integrated position at the system CG, but report the IMU's
+        // specific force at the payload CG. The canopy's relative angular
+        // velocity also rotates the hinge axis when the shared body rolls.
+        const Vector3f a{0, 0, model.payload_hinge_z_m};
+        const Vector3f b = rot_y(joint_pitch_rad) * Vector3f{model.canopy_hinge_x_m, 0, model.canopy_hinge_z_m};
+        const Vector3f relative_omega{0, joint_pitch_rate, 0};
+        const Vector3f canopy_omega = gyro + relative_omega;
+        const Vector3f canopy_alpha = rot_accel + Vector3f{0, joint_pitch_accel, 0} + (gyro % relative_omega);
+        payload_accel_offset = ((rot_accel % a) + (gyro % (gyro % a)) -
+                                (canopy_alpha % b) - (canopy_omega % (canopy_omega % b))) *
+                               (model.canopy_mass_kg / model.mass_kg);
+    }
+
+    if (launch_guided) {
+        // The synthetic throw guide supplies reaction moments during its
+        // acceleration interval. Release restores the free-flight equations.
+        gyro.zero();
+        rot_accel.zero();
+        joint_pitch_rate = 0;
+        joint_pitch_accel = 0;
+        payload_accel_offset.zero();
+    }
 
     motor_mask |= (1U << 2);
     rpm[2] = throttle * 8000.0f;
@@ -524,9 +634,31 @@ void Paraglider::load_coeffs(const char *model_json)
     LOAD_PHYS_FLOAT(brake_max_rad);
     LOAD_PHYS_FLOAT(canopy_pitch_rad);
     LOAD_PHYS_FLOAT(roll_damp_Nm_per_rps);
+    LOAD_PHYS_FLOAT(pitch_joint_enabled);
+    LOAD_PHYS_FLOAT(pitch_joint_locked);
+    LOAD_PHYS_FLOAT(canopy_mass_kg);
+    LOAD_PHYS_FLOAT(payload_pitch_inertia);
+    LOAD_PHYS_FLOAT(canopy_pitch_inertia);
+    LOAD_PHYS_FLOAT(payload_hinge_z_m);
+    LOAD_PHYS_FLOAT(canopy_hinge_x_m);
+    LOAD_PHYS_FLOAT(canopy_hinge_z_m);
+    LOAD_PHYS_FLOAT(thrust_payload_z_m);
+    LOAD_PHYS_FLOAT(pitch_joint_damping);
+    LOAD_PHYS_FLOAT(pitch_joint_stiffness);
 #undef LOAD_PHYS_FLOAT
 
     mass = model.mass_kg;
+    if (pitch_joint_enabled() &&
+        (!isfinite(model.mass_kg) || !isfinite(model.canopy_mass_kg) ||
+         !isfinite(model.payload_pitch_inertia) || !isfinite(model.canopy_pitch_inertia) ||
+         !isfinite(model.payload_hinge_z_m) || !isfinite(model.canopy_hinge_x_m) ||
+         !isfinite(model.canopy_hinge_z_m) || !isfinite(model.thrust_payload_z_m) ||
+         !isfinite(model.pitch_joint_damping) || !isfinite(model.pitch_joint_stiffness) ||
+         !(model.mass_kg > model.canopy_mass_kg) || !(model.canopy_mass_kg > 0) ||
+         !(model.payload_pitch_inertia > 0) || !(model.canopy_pitch_inertia > 0) ||
+         !(model.pitch_joint_damping >= 0) || !(model.pitch_joint_stiffness >= 0))) {
+        AP_HAL::panic("Invalid paraglider pitch joint mass, inertia or damping");
+    }
 
     delete obj;
 
@@ -539,9 +671,31 @@ void Paraglider::update(const struct sitl_input &input)
 {
     Vector3f rot_accel;
 
+    // Keep a guided aircraft supported until the launch command, rather
+    // than allowing motor thrust to initiate a separate ground run.
+    ground_behavior = launch_guide_attitude && !launch_started && input.servos[6] <= 1700 ?
+                      GROUND_BEHAVIOR_NO_MOVEMENT : GROUND_BEHAVIOR_FWD_ONLY;
     update_wind(input);
     calculate_forces(input, rot_accel);
     update_dynamics(rot_accel);
+    if (pitch_joint_enabled()) {
+        if (on_ground()) {
+            joint_pitch_rad = 0;
+            joint_pitch_rate = 0;
+        } else {
+            accel_body += payload_accel_offset;
+            const float dt = frame_time_us * 1.0e-6f;
+            joint_pitch_rate += joint_pitch_accel * dt;
+            joint_pitch_rad += joint_pitch_rate * dt;
+        }
+        if (time_now_us - joint_log_us >= 20000) {
+            joint_log_us = time_now_us;
+            AP::logger().WriteStreaming("PGJT", "TimeUS,Rel,QRel,QP,QC", "Qffff",
+                                       AP_HAL::micros64(), degrees(joint_pitch_rad),
+                                       degrees(joint_pitch_rate), degrees(gyro.y),
+                                       degrees(gyro.y + joint_pitch_rate));
+        }
+    }
     update_external_payload(input);
     update_position();
     time_advance();
