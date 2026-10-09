@@ -3,6 +3,7 @@
 #define AP_PARAM_VEHICLE_NAME plane
 
 #include <AP_Common/AP_Common.h>
+#include "PG_TurnController.h"
 
 // Global parameter class.
 //
@@ -481,6 +482,10 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+
+#if AP_TECS_PARAGLIDER_ENABLED
+    PG_TurnController pg_turn;
+#endif
 
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
