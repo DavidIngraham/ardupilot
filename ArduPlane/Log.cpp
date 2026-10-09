@@ -56,7 +56,13 @@ void Plane::Log_Write_Attitude(void)
     }
 #endif
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (!g2.pg_turn.active()) {
+        logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+    }
+#else
     logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+#endif
     logger.Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
 
     if (yawController.enabled()) {

@@ -1298,6 +1298,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
 #endif
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    // @Group: PG_TURN_
+    // @Path: PG_TurnController.cpp
+    AP_SUBGROUPINFO(pg_turn, "PG_TURN_", 42, ParametersG2, PG_TurnController),
+#endif
+
     AP_GROUPEND
 };
 

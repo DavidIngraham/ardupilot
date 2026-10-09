@@ -336,6 +336,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return false;
     }
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    g2.pg_turn.reset();
+#endif
+
     // exit previous mode
     old_mode.exit();
 
