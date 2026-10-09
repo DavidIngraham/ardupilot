@@ -21,7 +21,8 @@
 
     Brake force and moment conventions follow equations 20-22. Aerodynamic
     coefficients are dimensionless; brake derivatives are per radian.
-    The model assumes an inflated canopy rigidly attached to the payload.
+    An optional reduced-order pitch joint separates canopy and payload.
+    Roll and yaw remain shared; this is not a full multibody canopy model.
 */
 
 #pragma once
@@ -128,6 +129,20 @@ private:
         // Adds torque: Mx += -roll_damp_Nm_per_rps * p
         float roll_damp_Nm_per_rps = 0.6f;
 
+        // Optional pitch articulation. Zero retains the original rigid model.
+        // Provisional small-scale geometry, not identified from flight data.
+        float pitch_joint_enabled = 0;
+        float pitch_joint_locked = 0; // matched-geometry rigid control case
+        float canopy_mass_kg = 0.19f;
+        float payload_pitch_inertia = 0.03f; // about payload CG, kg m^2
+        float canopy_pitch_inertia = 0.025f; // about canopy CG, kg m^2
+        float payload_hinge_z_m = 0.35f; // hinge -> payload CG, down positive
+        float canopy_hinge_x_m = -0.30f;
+        float canopy_hinge_z_m = -0.85f;
+        float thrust_payload_z_m = -0.10f; // payload CG -> thrust line
+        float pitch_joint_damping = 0.015f; // Nm/(rad/s), equal/opposite
+        float pitch_joint_stiffness = 0; // Nm/rad; free pin by default
+
         AeroCoeffs aero{};
         StallModel stall{};
     } model;
@@ -151,10 +166,23 @@ private:
 
     // Launcher configuration/state
     bool have_launcher = false;
+    bool launch_guide_attitude = false; // synthetic throw guide, released after launch_time
     float launch_accel = 0.0f;     // m/s^2
     float launch_time = 0.0f;      // seconds
     uint64_t launch_start_ms = 0;
+    bool launch_started = false;
+    bool launch_released = false;
 
+    // Canopy physical pitch relative to payload, excluding rigging incidence.
+    float joint_pitch_rad = 0;
+    float joint_pitch_rate = 0;
+    float joint_pitch_accel = 0;
+    Vector3f payload_accel_offset{};
+    uint64_t joint_log_us = 0;
+
+    bool pitch_joint_enabled() const { return model.pitch_joint_enabled > 0.5f; }
+    void pitch_geometry(Vector3f &payload_arm, Vector3f &canopy_arm) const;
+    void pitch_accelerations(const ForceBreakdown &F, float &payload_accel, float &canopy_accel) const;
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel);
 
     ForceBreakdown compute_forces_bf(float brake_left_rad,
