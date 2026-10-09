@@ -172,6 +172,41 @@ float Plane::stabilize_roll_get_roll_out()
     }
 #endif
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (g2.pg_turn.enabled() &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_right) &&
+        arming.is_armed_and_safety_off() && !ground_mode &&
+        fabsf(ahrs.get_roll_rad()) < radians(75) && fabsf(ahrs.get_pitch_rad()) < radians(60)) {
+        float true_airspeed;
+        if (!ahrs.airspeed_TAS(true_airspeed)) {
+            true_airspeed = aparm.airspeed_cruise * ahrs.get_EAS2TAS();
+        }
+        true_airspeed = MAX(true_airspeed, 2.0f);
+        // Bank is only a guidance-command encoding here, never feedback.
+        // Retain the bank/load-factor limits and any pilot stick mixing.
+        const float lateral_accel = GRAVITY_MSS * tanf(cd_to_rad(nav_roll_cd)) * ahrs.cos_pitch();
+        float projection = 1.0f;
+        if (control_mode->does_auto_navigation()) {
+            const Vector2f velocity = ahrs.groundspeed_vector();
+            const float speed = velocity.length();
+            if (speed > 1.0f) {
+                projection = (velocity.x * ahrs.cos_yaw() + velocity.y * ahrs.sin_yaw()) / speed;
+            }
+        }
+        // For constant wind and small sideslip, course_rate =
+        // heading_rate * TAS * cos(heading-course) / groundspeed.
+        // Bound the projection near an unachievable crosswind/backwards track.
+        const float target_dps = degrees(lateral_accel / (true_airspeed * MAX(projection, 0.3f)));
+        const Vector3f &gyro = ahrs.get_gyro();
+        const float measured_dps = degrees((gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll()) / ahrs.cos_pitch());
+        // Reset the inactive controller, including its input shaping and tick tracking.
+        rollController.reset();
+        return g2.pg_turn.update(target_dps, measured_dps, degrees(gyro.x), true_airspeed, scheduler.get_loop_period_s());
+    }
+    g2.pg_turn.reset();
+#endif
+
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
