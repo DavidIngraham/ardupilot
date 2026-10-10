@@ -1,0 +1,32 @@
+# Load AFTER Tools/autotest/default_params/paraglider.parm. SITL research only.
+# Actual HR/TL channel assignments, ranges and reversal.
+SERVO1_FUNCTION 70
+SERVO1_MIN 1000
+SERVO1_MAX 2000
+SERVO1_TRIM 1000
+SERVO1_REVERSED 0
+SERVO2_FUNCTION 0
+SERVO3_FUNCTION 190
+SERVO3_MIN 800
+SERVO3_MAX 2100
+SERVO3_TRIM 800
+SERVO3_REVERSED 0
+SERVO4_FUNCTION 191
+SERVO4_MIN 900
+SERVO4_MAX 2400
+SERVO4_TRIM 2400
+SERVO4_REVERSED 1
+PG_TURN_ENABLE 1
+PG_TURN_P 0.005
+PG_TURN_I 0.0005
+PG_TURN_RDAMP 0.003
+PG_TURN_D_FF 0
+PG_TURN_FILT 1
+PG_TURN_RMAX 20
+# Keep native constant FF; trim-table research is in mission_demo.py.
+PG_TURN_FF 0.051
+TECS_PTCH_DAMP 0
+THR_MAX 60
+TRIM_THROTTLE 43
+# Keep avionics running while airborne initialization waits for release.
+BATT_MONITOR 0

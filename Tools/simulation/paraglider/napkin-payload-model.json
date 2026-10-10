@@ -1,0 +1,1360 @@
+{
+  "scope": "Approximate model, not native SolidWorks edit. AUW constrained; correlated sensitivity scenarios, not confidence intervals.",
+  "frame": "CAD+x forward assumed, CAD+z up; body FRD=[CADx,-CADy,-CADz]. Datum CAD assembly origin.",
+  "placement_notes": [
+    "Cached component origins are not centroids. Box centroids use CAD anchors and build-photo layout.",
+    "Cached second servo/prop placements appear displaced; use symmetric installed servos and prop on motor shaft rather than literal cached origins.",
+    "Batteries approximated side-by-side in bottom box; dimensions from source pack size, centroid allowance.",
+    "Hinge at CADz=.150 is a top-spreader approximation, not extracted attachment hole.",
+    "Residual mass covers unweighed printed structure; mass closure does not validate spatial allocation.",
+    "Canopy mass range140\u2013240g assumed; not inferred from logs.",
+    "Lead center -20 to+5mm CADz assumed at payload bottom.",
+    "Box inertia approximates component mass distribution; shroud distributed inertia not separately resolved."
+  ],
+  "cases": [
+    {
+      "case": "nominal",
+      "with_lead": false,
+      "canopy_mass_kg": 0.19,
+      "payload_mass_kg": 1.195,
+      "AUW_kg": 1.385,
+      "CG_cad_m": [
+        0.03707810878661088,
+        -0.0001099581589958159,
+        0.07070383263598327
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.002689344465277769,
+          -1.1066365054393372e-06,
+          -0.00045605769573824257
+        ],
+        [
+          -1.1066365054393372e-06,
+          0.0028997224181057184,
+          3.586716391631787e-06
+        ],
+        [
+          -0.00045605769573824257,
+          3.586716391631787e-06,
+          0.0015622317891570993
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.006921891213389118,
+          -0.0001099581589958159,
+          -0.07929616736401672
+        ],
+        "thrust": [
+          -0.03707810878661088,
+          -0.0001099581589958159,
+          -0.054296167364016726
+        ],
+        "imu": [
+          0.0004218912133891195,
+          -0.0001099581589958159,
+          -0.039296167364016726
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.29170000000000007,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.03,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.05,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.16043500000000005,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.13126500000000002,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        }
+      ]
+    },
+    {
+      "case": "nominal",
+      "with_lead": true,
+      "canopy_mass_kg": 0.19,
+      "payload_mass_kg": 1.568,
+      "AUW_kg": 1.758,
+      "CG_cad_m": [
+        0.03872470663265306,
+        -8.380102040816326e-05,
+        0.05198155612244899
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.004531667645148981,
+          -8.902735484693947e-07,
+          -0.0006109220014841836
+        ],
+        [
+          -8.902735484693947e-07,
+          0.00478985392513478,
+          6.0468235255101976e-06
+        ],
+        [
+          -0.0006109220014841836,
+          6.0468235255101976e-06,
+          0.001765463657077636
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.005275293367346938,
+          -8.380102040816326e-05,
+          -0.09801844387755101
+        ],
+        "thrust": [
+          -0.03872470663265306,
+          -8.380102040816326e-05,
+          -0.07301844387755102
+        ],
+        "imu": [
+          -0.001224706632653061,
+          -8.380102040816326e-05,
+          -0.058018443877551014
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.29170000000000007,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.03,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.05,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.16043500000000005,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.13126500000000002,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        },
+        {
+          "name": "Lead",
+          "mass_kg": 0.373,
+          "center_cad_m": [
+            0.044,
+            0,
+            -0.008
+          ],
+          "box_dimensions_cad_m": [
+            0.06,
+            0.05,
+            0.011
+          ]
+        }
+      ]
+    },
+    {
+      "case": "low_cg",
+      "with_lead": false,
+      "canopy_mass_kg": 0.14,
+      "payload_mass_kg": 1.245,
+      "AUW_kg": 1.3850000000000002,
+      "CG_cad_m": [
+        0.03752255421686747,
+        -0.00010554216867469879,
+        0.06598840160642569
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.002697661777611567,
+          -1.0482363759036087e-06,
+          -0.0004826253343171084
+        ],
+        [
+          -1.0482363759036087e-06,
+          0.0029300553975301212,
+          4.206324028915678e-06
+        ],
+        [
+          -0.0004826253343171084,
+          4.206324028915678e-06,
+          0.0016140742834366269
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.006477445783132529,
+          -0.00010554216867469879,
+          -0.0840115983935743
+        ],
+        "thrust": [
+          -0.03752255421686747,
+          -0.00010554216867469879,
+          -0.05901159839357431
+        ],
+        "imu": [
+          -2.2554216867469445e-05,
+          -0.00010554216867469879,
+          -0.04401159839357431
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.35970000000000013,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.022,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.04,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.12589500000000003,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.2338050000000001,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        }
+      ]
+    },
+    {
+      "case": "low_cg",
+      "with_lead": true,
+      "canopy_mass_kg": 0.14,
+      "payload_mass_kg": 1.618,
+      "AUW_kg": 1.758,
+      "CG_cad_m": [
+        0.039015809641532756,
+        -8.121137206427688e-05,
+        0.04616536464771322
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.004901300713860569,
+          -8.520226131025905e-07,
+          -0.0006424866300276887
+        ],
+        [
+          -8.520226131025905e-07,
+          0.005179925042290895,
+          6.8110710852904755e-06
+        ],
+        [
+          -0.0006424866300276887,
+          6.8110710852904755e-06,
+          0.0018157280527484137
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.0049841903584672415,
+          -8.121137206427688e-05,
+          -0.10383463535228678
+        ],
+        "thrust": [
+          -0.039015809641532756,
+          -8.121137206427688e-05,
+          -0.07883463535228678
+        ],
+        "imu": [
+          -0.0015158096415327574,
+          -8.121137206427688e-05,
+          -0.06383463535228678
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.35970000000000013,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.022,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.04,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.12589500000000003,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.2338050000000001,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        },
+        {
+          "name": "Lead",
+          "mass_kg": 0.373,
+          "center_cad_m": [
+            0.044,
+            0,
+            -0.02
+          ],
+          "box_dimensions_cad_m": [
+            0.06,
+            0.05,
+            0.011
+          ]
+        }
+      ]
+    },
+    {
+      "case": "high_cg",
+      "with_lead": false,
+      "canopy_mass_kg": 0.24,
+      "payload_mass_kg": 1.145,
+      "AUW_kg": 1.385,
+      "CG_cad_m": [
+        0.03674524017467248,
+        -0.00011475982532751091,
+        0.07366375545851528
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.0025797067864104808,
+          -1.1503754410480346e-06,
+          -0.0004334080825327511
+        ],
+        [
+          -1.1503754410480346e-06,
+          0.002778022027410481,
+          3.197782532751069e-06
+        ],
+        [
+          -0.0004334080825327511,
+          3.197782532751069e-06,
+          0.0014973824821179038
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.007254759825327514,
+          -0.00011475982532751091,
+          -0.07633624454148472
+        ],
+        "thrust": [
+          -0.03674524017467248,
+          -0.00011475982532751091,
+          -0.05133624454148472
+        ],
+        "imu": [
+          0.0007547598253275153,
+          -0.00011475982532751091,
+          -0.03633624454148472
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.2217,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.03,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.07,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.166275,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.055425,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        }
+      ]
+    },
+    {
+      "case": "high_cg",
+      "with_lead": true,
+      "canopy_mass_kg": 0.24,
+      "payload_mass_kg": 1.518,
+      "AUW_kg": 1.758,
+      "CG_cad_m": [
+        0.03852786561264821,
+        -8.656126482213438e-05,
+        0.05679183135704875
+      ],
+      "inertia_body_kg_m2": [
+        [
+          0.003987650581225297,
+          -9.161384584980176e-07,
+          -0.0005735580944664032
+        ],
+        [
+          -9.161384584980176e-07,
+          0.004234961518326747,
+          5.414753359683801e-06
+        ],
+        [
+          -0.0005735580944664032,
+          5.414753359683801e-06,
+          0.0017018022554677204
+        ]
+      ],
+      "arms_body_m": {
+        "hinge": [
+          0.005472134387351786,
+          -8.656126482213438e-05,
+          -0.09320816864295124
+        ],
+        "thrust": [
+          -0.03852786561264821,
+          -8.656126482213438e-05,
+          -0.06820816864295125
+        ],
+        "imu": [
+          -0.0010278656126482127,
+          -8.656126482213438e-05,
+          -0.05320816864295125
+        ]
+      },
+      "unweighed_structure_mass_kg": 0.2217,
+      "components": [
+        {
+          "name": "Battery left",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            -0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "Battery right",
+          "mass_kg": 0.31,
+          "center_cad_m": [
+            0.044,
+            0.0195,
+            0.044
+          ],
+          "box_dimensions_cad_m": [
+            0.055,
+            0.038,
+            0.07
+          ]
+        },
+        {
+          "name": "FFTY motor (box approximation)",
+          "mass_kg": 0.112,
+          "center_cad_m": [
+            -0.017,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.034,
+            0.0375,
+            0.0375
+          ]
+        },
+        {
+          "name": "Servo left",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            -0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "Servo right",
+          "mass_kg": 0.032,
+          "center_cad_m": [
+            0.049,
+            0.025,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.033,
+            0.015,
+            0.0345
+          ]
+        },
+        {
+          "name": "GPS",
+          "mass_kg": 0.008,
+          "center_cad_m": [
+            0.069,
+            0,
+            0.1366
+          ],
+          "box_dimensions_cad_m": [
+            0.02,
+            0.02,
+            0.0124
+          ]
+        },
+        {
+          "name": "Avionics incl USB allowance",
+          "mass_kg": 0.03,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.11
+          ],
+          "box_dimensions_cad_m": [
+            0.054,
+            0.036,
+            0.013
+          ]
+        },
+        {
+          "name": "ESC provisional",
+          "mass_kg": 0.0073,
+          "center_cad_m": [
+            0.0455,
+            -0.018,
+            0.098
+          ],
+          "box_dimensions_cad_m": [
+            0.021,
+            0.035,
+            0.007
+          ]
+        },
+        {
+          "name": "9x4.5 prop allowance",
+          "mass_kg": 0.012,
+          "center_cad_m": [
+            -0.04,
+            0,
+            0.125
+          ],
+          "box_dimensions_cad_m": [
+            0.008,
+            0.229,
+            0.015
+          ]
+        },
+        {
+          "name": "Wires connectors receiver hardware allowance",
+          "mass_kg": 0.07,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.1
+          ],
+          "box_dimensions_cad_m": [
+            0.08,
+            0.07,
+            0.07
+          ]
+        },
+        {
+          "name": "Unweighed upper structure allocation",
+          "mass_kg": 0.166275,
+          "center_cad_m": [
+            0.038,
+            0,
+            0.126
+          ],
+          "box_dimensions_cad_m": [
+            0.1,
+            0.11,
+            0.05
+          ]
+        },
+        {
+          "name": "Unweighed lower structure allocation",
+          "mass_kg": 0.055425,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.038
+          ],
+          "box_dimensions_cad_m": [
+            0.09,
+            0.08,
+            0.076
+          ]
+        },
+        {
+          "name": "Lead",
+          "mass_kg": 0.373,
+          "center_cad_m": [
+            0.044,
+            0,
+            0.005
+          ],
+          "box_dimensions_cad_m": [
+            0.06,
+            0.05,
+            0.011
+          ]
+        }
+      ]
+    }
+  ]
+}
