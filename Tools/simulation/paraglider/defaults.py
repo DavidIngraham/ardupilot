@@ -1,0 +1,1 @@
+DEFAULT=dict(rho=1.225,S=1.16,b=2.15,c=.54,CL0=.4,CLa=2.,CD0=.15,k_drag=.3,CYbeta=-.2,CLbrake=1.,CDbrake=1.,Clbeta=-.03,Clp=-.1,Cldelta=.05,Cm0=.02,Cma=-.2,Cmq=-2.,Cnbeta=.03,Cnr=-.05,Cndelta=.04,payload_CDA=.015,thrust_max=10.,thrust_z=-.10,prop_torque=-.02,joint_k_roll=.4,joint_k_pitch=0.,joint_k_yaw=.05,joint_c_roll=.03,joint_c_pitch=.015,joint_c_yaw=.02)

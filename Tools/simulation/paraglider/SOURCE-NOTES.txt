@@ -1,0 +1,16 @@
+Research source snapshot,10 October2026.
+
+The two-body dynamics and model configuration are the local parafoil research
+implementation retained from this study. The embedded APC9x4.5 aerodynamic
+map is a proxy for the user-reported actual propeller; see the study report.
+
+controllers.py contains a diagnostic core port of ArduPilot
+ArduPlane/PG_TurnController.cpp from commit
+b2f6da3a183a68d3de6f2c721ec90fca0eab53d5. That controller code is GPL-3.0-or-later;
+the accompanying source license is copied as COPYING-controllers.txt when
+available in the source checkout. This package is not a production firmware
+release and does not include the navigation/EKF implementation.
+
+The build scripts compile only the local dynamics.cpp. No production repository
+files are edited. resolved-configurations.json records complete mission and
+dynamic-roll profiles; raw parameters.json alone is not a configured model.
