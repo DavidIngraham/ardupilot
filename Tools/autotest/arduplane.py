@@ -225,6 +225,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                          'next_track_overshoot_m': None}
                    for seq in targets}
         rows = []
+        servo_functions = self.get_parameters([f"SERVO{i}_FUNCTION" for i in range(1, 17)])
+        channels = {function: next(i for i in range(1, 17)
+                                  if servo_functions[f"SERVO{i}_FUNCTION"] == function)
+                    for function in (190, 191, 70)}
 
         def observe(mav, message):
             if message.get_type() == 'ATTITUDE':
@@ -282,7 +286,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             rows.append((seq, message.time_boot_ms * 0.001, here.lat, here.lng,
                          altitude, distance, math.hypot(message.vx, message.vy) * 0.01,
                          attitude.roll, attitude.pitch, attitude.yawspeed,
-                         servos.servo1_raw, servos.servo2_raw, servos.servo3_raw,
+                         *(getattr(servos, f"servo{channels[f]}_raw") for f in (190, 191, 70)),
                          navigation.nav_roll, navigation.xtrack_error))
 
         for message in ('GLOBAL_POSITION_INT', 'ATTITUDE', 'SERVO_OUTPUT_RAW',
