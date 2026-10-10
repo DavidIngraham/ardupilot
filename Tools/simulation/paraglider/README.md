@@ -18,7 +18,7 @@ already been rewritten.
   rigging configurations.
 * `mission_demo.py` and `controllers.py` preserve the newer trim-table and power
   bias experiments. Their scheduled feedforward is **not** in the native flight
-  controller. The native preset uses conservative feedback gains and constant FF.
+  controller. The native preset uses lower feedback gains and constant FF. The full AUTO comparison found large sustained-turn oscillations with that preset; use PG_GAINS=original in the comparison harness as the better native reference.
 
 ## Build (Ubuntu / WSL)
 
@@ -82,3 +82,34 @@ SOURCE-NOTES.txt and configuration-provenance.json retain source provenance.
 Generated libraries, histories and verification output are ignored by Git.
 The early TL turn bias and powered HR equilibrium remain model limitations;
 these profiles are useful competing development models, not identified truth.
+
+## Compare with the original extended AUTO test
+
+With the standard ArduPilot autotest Python environment active, run from the repo
+root. Give each run its own BUILDLOGS directory; run them sequentially because
+SITL and the JSON backend use the standard local ports.
+
+```sh
+BUILDLOGS=/tmp/pg-original Tools/autotest/autotest.py \
+  --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderAutoMission
+BUILDLOGS=/tmp/pg-high-original PG_GAINS=original \
+  python Tools/simulation/paraglider/compare_autotest.py \
+  --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderAutoMission
+BUILDLOGS=/tmp/pg-high-conservative PG_GAINS=conservative \
+  python Tools/simulation/paraglider/compare_autotest.py \
+  --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderAutoMission
+```
+
+The comparison wrapper uses the existing mission, checks and CSV measurements.
+Only launch is replaced by a trimmed airborne start. It waits for EKF readiness,
+arms, restores the ground home datum, then enters FBWB to capture a valid height
+target before release. Entering FBWB before EKF initialization captures an invalid
+altitude and commands a descent; that is a harness error, not a model result.
+`PG_PROFILE=dynamic_roll` selects the alternative physics profile.
+
+`PG_GAINS=original` restores the original six changed lateral parameters; the
+flight-calibrated PWM ranges, throttle cap and disabled pitch damper remain.
+This compares complete development configurations, not a physics-only ablation.
+Partial failures retain the mission CSV where available and high-dof-trace.npz
+with time, release flag and the 26-state plant history. A failed mission check
+must not be interpreted as a general rejection of the model.
