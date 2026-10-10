@@ -34,7 +34,7 @@ def airborne(self, altitude=60, **kwargs):
                 try:data,address=sock.recvfrom(2048)
                 except socket.timeout:continue
                 sock.sendto(backend.respond(data),address)
-                if backend.frame % 40 == 0:
+                if backend.frame % int(os.environ.get("PG_SAMPLE_DIVISOR", "40")) == 0:
                     samples.append([backend.time, float(backend.released), *backend.state])
         except Exception as e:
             errors.append(repr(e))
@@ -86,4 +86,5 @@ mission.__name__='ParagliderAutoMission'
 mission.__doc__=original.__doc__
 arduplane.AutoTestPlane.paraglider_takeoff=airborne
 arduplane.AutoTestPlane.ParagliderAutoMission=mission
-runpy.run_path(str(ROOT/'Tools/autotest/autotest.py'),run_name='__main__')
+if __name__ == '__main__':
+    runpy.run_path(str(ROOT/'Tools/autotest/autotest.py'),run_name='__main__')
