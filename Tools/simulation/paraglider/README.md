@@ -143,3 +143,31 @@ climb variability. No flight-code sign or default gain is changed by this study.
 Full plots and methodology are in Mission Planner analysis,
 turn-model-spike/native-damper-sign/report.html. Raw runs are in
 /home/david/repos/pg-damper-study. Regenerate plots with plot_damper.py --runs-dir.
+
+## Longitudinal isolation and frequency response
+
+Set `PG_FIXED_BRAKES=1` in the damper harness to hold physical brake commands at
+its solved equilibrium (0 and 3.7472 mm for nominal Trout Lake), starting before
+release. Native TECS and the lateral controller still execute; the lateral
+controller's brake outputs are bypassed at the plant input. The pitch kick and
+all other settings remain the same. This is a diagnostic intervention, not a
+flight configuration. The event JSON records the intervention and brake values.
+
+Run off, +0.02 and -0.02 sequentially in separate output directories. Compare to
+the previous active-brake runs using:
+
+```sh
+python3 Tools/simulation/paraglider/plot_longitudinal_isolation.py --active /home/david/repos/pg-damper-study --fixed /home/david/repos/pg-longitudinal-isolation
+python3 Tools/simulation/paraglider/longitudinal_frequency.py --output /home/david/repos/pg-longitudinal-isolation/frequency
+```
+
+The frequency study linearizes the full causal-RPM model at straight level trim
+in 15 joint-compatible tangent coordinates plus rotor RPM. It uses central
+finite differences of the 5 ms discrete transition, with 1.25 ms RK4 substeps.
+Outputs are body pitch rate and CG climb rate; physical brakes remain fixed.
+Five nonlinear sinusoidal tests at each of two amplitudes (0.001 and 0.0005
+throttle fraction) independently check the response from 0.1 to 3 Hz. The fit
+uses the second half of each run, with a constant and linear trend included.
+The 0.02–8 Hz plotted curve extends beyond those validation frequencies.
+This characterizes the model locally; it does not establish aircraft frequency
+response, include native EKF/controller delays, or provide closed-loop margins.
