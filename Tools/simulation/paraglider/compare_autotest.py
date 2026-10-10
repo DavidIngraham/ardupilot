@@ -50,6 +50,9 @@ def airborne(self, altitude=60, **kwargs):
     if os.environ.get('PG_GAINS','conservative')=='original':
         self.set_parameters({'PG_TURN_P':.04,'PG_TURN_I':.002,'PG_TURN_RDAMP':.03,
                              'PG_TURN_D_FF':.02,'PG_TURN_FILT':4,'PG_TURN_RMAX':25})
+    if os.environ.get('PG_CONTROLLER_CONFIG'):
+        controller_config = json.loads(Path(os.environ['PG_CONTROLLER_CONFIG']).read_text())
+        self.set_parameters(controller_config['parameters'])
     self.change_mode('MANUAL')
     self.wait_ready_to_arm()
     self.arm_vehicle()

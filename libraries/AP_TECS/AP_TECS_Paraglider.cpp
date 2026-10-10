@@ -22,6 +22,22 @@ const AP_Param::GroupInfo AP_TECS::Paraglider_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PR_FILT", 1, AP_TECS::Paraglider_Params, pr_filt_hz, 2.0f),
 
+    // @Param: PR_WASH
+    // @DisplayName: Paraglider pitch-rate damper washout frequency
+    // @Description: Removes low-frequency pitch rate from the damper using a first-order high-pass after PR_FILT. Zero preserves the original damper. This does not change feedback sign or guarantee stability.
+    // @Range: 0 5
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("PR_WASH", 2, AP_TECS::Paraglider_Params, pr_wash_hz, 0.0f),
+
+    // @Param: HR_TC
+    // @DisplayName: Paraglider height-rate feedforward time constant
+    // @Description: Smooth the altitude trajectory derivative before using it as vertical-speed feedforward. This reduces throttle kicks from abrupt altitude captures. Zero preserves the unsmoothed derivative. Height feedback and trajectory slew limits remain unchanged.
+    // @Range: 0 5
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("HR_TC", 3, AP_TECS::Paraglider_Params, hgt_rate_tconst, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -32,8 +48,11 @@ void AP_TECS::_update_pitch_rate(float dt)
         const Vector3f &gyro = _ahrs.get_gyro();
         _pg_pitch_rate_lpf.set_cutoff_frequency(_pg_params.pr_filt_hz);
         _pg_pitch_rate_lpf.apply(gyro.y, dt);
+        _pg_pitch_rate_wash.set_cutoff_frequency(MAX(_pg_params.pr_wash_hz.get(), 0.0f));
+        _pg_pitch_rate_wash.apply(_pg_pitch_rate_lpf.get(), dt);
     } else {
         _pg_pitch_rate_lpf.reset(0.0f);
+        _pg_pitch_rate_wash.reset(0.0f);
     }
 }
 
@@ -41,6 +60,8 @@ void AP_TECS::_reset_paraglider(void)
 {
     _pg_pitch_rate_lpf.set_cutoff_frequency(_pg_params.pr_filt_hz);
     _pg_pitch_rate_lpf.reset();
+    _pg_pitch_rate_wash.reset();
+    _pg_hgt_rate_ff = 0.0f;
     reset_throttle_I();
 }
 
@@ -87,6 +108,16 @@ void AP_TECS::_update_paraglider_hgt_demand(void)
     // Publish the derivative before saving this demand for the next update.
     _hgt_rate_dem = (_hgt_dem - _hgt_dem_prev) / _DT;
     _hgt_dem_prev = _hgt_dem;
+    if (_flags.reset) {
+        _pg_hgt_rate_ff = 0.0f;
+    }
+    const float rate_tc = MAX(_pg_params.hgt_rate_tconst.get(), 0.0f);
+    if (is_positive(rate_tc)) {
+        _pg_hgt_rate_ff += (_DT / (_DT + rate_tc)) * (_hgt_rate_dem - _pg_hgt_rate_ff);
+        _hgt_rate_dem = _pg_hgt_rate_ff;
+    } else {
+        _pg_hgt_rate_ff = _hgt_rate_dem;
+    }
 }
 
 /*
@@ -183,7 +214,9 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
     if (!is_zero(_land_pitch_damp) && _flags.is_doing_auto_land) {
         pitch_damp = _land_pitch_damp;
     }
-    float pr_damp = -pitch_damp * _pg_pitch_rate_lpf.get();
+    const float pitch_rate = _pg_pitch_rate_lpf.get() -
+        (is_positive(_pg_params.pr_wash_hz.get()) ? _pg_pitch_rate_wash.get() : 0.0f);
+    float pr_damp = -pitch_damp * pitch_rate;
     pr_damp = constrain_float(pr_damp, -0.25f, 0.25f);
 
     _throttle_dem = thr_ff_pd + _integTHR_state + pr_damp;
