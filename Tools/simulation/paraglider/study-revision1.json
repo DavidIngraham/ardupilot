@@ -1,0 +1,7 @@
+{
+ "baseline_matched":{},
+ "r1_off":{"parameters":{"PG_TURN_P":0.005,"PG_TURN_RDAMP":0.003,"TRIM_THROTTLE":45,"TECS_CLMB_MAX":1.0}},
+ "r1_reversed":{"parameters":{"PG_TURN_P":0.005,"PG_TURN_RDAMP":0.003,"TRIM_THROTTLE":45,"TECS_CLMB_MAX":1.0,"TECS_PTCH_DAMP":-0.02}},
+ "r1_shaped":{"parameters":{"PG_TURN_P":0.005,"PG_TURN_RDAMP":0.003,"TRIM_THROTTLE":45,"TECS_CLMB_MAX":1.0,"TECS_PTCH_DAMP":-0.02,"TECS_PG_PR_FILT":3,"TECS_PG_PR_WASH":0.6}},
+ "fixed_tuned":{"fixed_brakes":true,"parameters":{"TRIM_THROTTLE":45,"TECS_CLMB_MAX":1.0}}
+}

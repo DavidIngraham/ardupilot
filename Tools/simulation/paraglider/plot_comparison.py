@@ -10,6 +10,7 @@ root=Path(__file__).resolve().parents[3]
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--runs-dir',type=Path,default=root.parent/'pg-sitl-comparison')
 parser.add_argument('--output',type=Path)
+parser.add_argument('--candidate',type=Path,help='Additional ParagliderAutoMission.csv to compare')
 parser.add_argument('--archive',type=Path,default=root.parent/'ArduPilot-tinkering/scratch/paraglider-tests/yaw-controller/ParagliderAutoMission-final-native.csv')
 args=parser.parse_args()
 base=args.runs_dir
@@ -17,6 +18,7 @@ out=args.output or base
 out.mkdir(parents=True,exist_ok=True)
 arch=args.archive
 cases=[('Archived original',arch),('Original model rerun',base/'baseline/ParagliderAutoMission.csv'),('High DOF / original gains',base/'high-original-v3/ParagliderAutoMission.csv'),('High DOF / conservative gains',base/'high-conservative/ParagliderAutoMission.csv')]
+if args.candidate:cases.append(('Longitudinal mission candidate',args.candidate))
 fig,axes=plt.subplots(2,2,figsize=(13,10));summary={}
 for label,path in cases:
  if not path.exists():continue
