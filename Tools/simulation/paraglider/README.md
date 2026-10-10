@@ -113,3 +113,33 @@ This compares complete development configurations, not a physics-only ablation.
 Partial failures retain the mission CSV where available and high-dof-trace.npz
 with time, release flag and the 26-state plant history. A failed mission check
 must not be interpreted as a general rejection of the model.
+
+## Native pitch-rate damper sign experiment
+
+From the repository root, with the autotest Python environment active:
+
+```sh
+BUILDLOGS=/tmp/pg-damper-off PG_DAMP_GAIN=0 python Tools/simulation/paraglider/damper_autotest.py --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderDamperSign
+```
+
+Repeat sequentially with separate BUILDLOGS directories and PG_DAMP_GAIN set to
+0.3, -0.3, 0.02 and -0.02. The native equation is delta_throttle=-gain*q_filtered;
+negative gains reverse the sign for this isolated PG-enabled SITL experiment.
+Do not use this as a generic TECS aircraft parameter recommendation.
+The harness reuses the airborne setup and leaves all other gains/model settings
+fixed. It settles for 30 s with the damper off, enables the selected gain, applies
+a 5 deg/s body-pitch-rate increment preserving joint velocity compatibility,
+and records 75 s. The active lateral controller remains enabled. Plant truth is
+sampled at 50 Hz; native output is retained in flight.BIN. Completion is not a
+stability pass. The gain activates before the kick, so the full initial states
+are not identical; the applied kick increment is.
+
+Results on 10 October 2026 (45–75 s after kick): pitch-rate RMS off=16.01 deg/s,
+original 0.30=61.19, reversed 0.30=55.94, original 0.02=21.37, reversed 0.02=12.66.
+The reversed 0.30 case has a much larger slow pitch excursion (64.28 deg
+peak-to-peak, dominant rate frequency 0.33 Hz), despite its slightly lower rate
+RMS. Reversed 0.02 reduces the fast motion without saturation, but slightly raises
+climb variability. No flight-code sign or default gain is changed by this study.
+Full plots and methodology are in Mission Planner analysis,
+turn-model-spike/native-damper-sign/report.html. Raw runs are in
+/home/david/repos/pg-damper-study. Regenerate plots with plot_damper.py --runs-dir.
