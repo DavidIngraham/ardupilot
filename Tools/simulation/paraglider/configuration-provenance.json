@@ -1,0 +1,46 @@
+{
+  "name": "candidate-v3",
+  "status": "Co-retained research model family; isolated build, API, replay and controller diagnostics verified",
+  "nominal": {
+    "model": "modal",
+    "roll_stiffness_Nm_rad": 4.862204090535876,
+    "hood_river_left_deadband_mm": 12.151707100207533,
+    "hood_river_right_effective_preload_mm": 6,
+    "trout_lake_left_deadband_mm": 0,
+    "trout_lake_right_effective_preload_mm": 0
+  },
+  "interpretation": "The preload is an effective trim correction inferred from reused flight data. It can absorb unresolved canopy asymmetry, actuator zero and propulsion/geometry error; it is not a measured line length.",
+  "selection": "Six low-input-variation development windows distributed across each flight favored HR 6 mm and TL 0 mm by mean course error on a small discrete comparison. Remaining previously inspected windows and longer contexts check tradeoffs.",
+  "alternatives": {
+    "hood_river_preload_mm": [
+      0,
+      4,
+      8
+    ],
+    "trout_lake_preload_mm": [
+      0,
+      2,
+      4
+    ],
+    "roll_stiffness_Nm_rad": [
+      1,
+      4.862204090535876
+    ]
+  },
+  "profiles": {
+    "mission": "Default Simulator: stronger ordinary trajectory agreement.",
+    "dynamic_roll": "profiles.make_simulator(..., dynamic_roll): roll stiffness1 N m/rad with model-derived level trim correction; stronger fast roll response, stronger powered-HR instability."
+  },
+  "dynamic_roll": {
+    "roll_stiffness_Nm_rad": 1.0,
+    "hood_river_right_offset_m": -0.005482288179747503,
+    "trout_lake_right_offset_m": 0.0009301618779636765
+  },
+  "evidence": [
+    "../retained-summary.json",
+    "../soft-v3-atlas-results.json",
+    "../soft-retrim-spectra-summary.json",
+    "../soft-roll-ridge-phase-check.json",
+    "../fresh-package-check.json"
+  ]
+}

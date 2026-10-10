@@ -1,0 +1,362 @@
+[
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.0,
+    "requested_turn": -15.0,
+    "command": [
+      0.3981727795585188,
+      20.25087817299184,
+      0.0
+    ],
+    "rpm": 7141.053366082763,
+    "max_equilibrium_residual": 2.2801270740960546e-12,
+    "solver_success": true,
+    "achieved_climb": -6.558640096536098e-13,
+    "achieved_turn": -14.999999999980831,
+    "turn_std": 9.866470780716568e-13,
+    "horizontal_speed": 3.7757074719568444,
+    "course_drift_last10": -7.105427357601002e-14
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.0,
+    "requested_turn": -10.0,
+    "command": [
+      0.39562964230657294,
+      17.865028359327383,
+      0.0
+    ],
+    "rpm": 7099.542669004431,
+    "max_equilibrium_residual": 1.6622833030547115e-11,
+    "solver_success": true,
+    "achieved_climb": -6.14916949707131e-12,
+    "achieved_turn": -9.999999999921494,
+    "turn_std": 1.24071082620502e-12,
+    "horizontal_speed": 3.7672271922488045,
+    "course_drift_last10": 9.059419880941277e-14
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.0,
+    "requested_turn": 0.0,
+    "command": [
+      0.39198236503640294,
+      0.0,
+      0.42229158874662703
+    ],
+    "rpm": 7039.966854849515,
+    "max_equilibrium_residual": 5.944516621028624e-12,
+    "solver_success": true,
+    "achieved_climb": -2.063285622449574e-12,
+    "achieved_turn": -1.7620776854440229e-10,
+    "turn_std": 2.1517406171434094e-13,
+    "horizontal_speed": 3.7963862281366456,
+    "course_drift_last10": -3.2407864357440203e-13
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.0,
+    "requested_turn": 10.0,
+    "command": [
+      0.39471992153709007,
+      0.0,
+      5.609911939955811
+    ],
+    "rpm": 7084.687712557352,
+    "max_equilibrium_residual": 1.6359032290321171e-12,
+    "solver_success": true,
+    "achieved_climb": 6.422234346341066e-13,
+    "achieved_turn": 10.000000000018655,
+    "turn_std": 1.2570930133507942e-12,
+    "horizontal_speed": 3.744744776224665,
+    "course_drift_last10": 1.6342482922482304e-13
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.0,
+    "requested_turn": 15.0,
+    "command": [
+      0.3964664823282309,
+      0.0,
+      7.757790429794574
+    ],
+    "rpm": 7113.204787706263,
+    "max_equilibrium_residual": 5.461157116955762e-13,
+    "solver_success": true,
+    "achieved_climb": 2.932814192347271e-13,
+    "achieved_turn": 15.000000000014454,
+    "turn_std": 7.622296113464581e-13,
+    "horizontal_speed": 3.744498502850324,
+    "course_drift_last10": 9.947598300641403e-14
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.5,
+    "requested_turn": -15.0,
+    "command": [
+      0.48000826433547544,
+      0.0,
+      5.169297711621699
+    ],
+    "rpm": 8464.73488575286,
+    "max_equilibrium_residual": 1.953871776734522e-13,
+    "solver_success": true,
+    "achieved_climb": 0.5000000000000419,
+    "achieved_turn": -14.999999999987615,
+    "turn_std": 1.2718656320423524e-12,
+    "horizontal_speed": 3.7684550067146145,
+    "course_drift_last10": 1.2967404927621828e-13
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.5,
+    "requested_turn": -10.0,
+    "command": [
+      0.47754895347988807,
+      0.0,
+      5.67054704231761
+    ],
+    "rpm": 8425.274923459705,
+    "max_equilibrium_residual": 2.140196572248371e-13,
+    "solver_success": true,
+    "achieved_climb": 0.5000000000002068,
+    "achieved_turn": -9.999999999987494,
+    "turn_std": 1.2068817195465864e-12,
+    "horizontal_speed": 3.6999240559751305,
+    "course_drift_last10": -5.808686864838819e-13
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.5,
+    "requested_turn": 0.0,
+    "command": [
+      0.4737249297247122,
+      0.0,
+      5.787504459149344
+    ],
+    "rpm": 8363.881017053936,
+    "max_equilibrium_residual": 8.187864463847138e-14,
+    "solver_success": true,
+    "achieved_climb": 0.49999999999976774,
+    "achieved_turn": -8.718397343560477e-12,
+    "turn_std": 1.5573404500166353e-12,
+    "horizontal_speed": 3.633282178581973,
+    "course_drift_last10": 2.5531505136113198e-12
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.5,
+    "requested_turn": 10.0,
+    "command": [
+      0.47180058769225036,
+      0.0,
+      5.378415917891854
+    ],
+    "rpm": 8332.968988359702,
+    "max_equilibrium_residual": 1.0452053287399576e-13,
+    "solver_success": true,
+    "achieved_climb": 0.5000000000001342,
+    "achieved_turn": 9.999999999764546,
+    "turn_std": 2.955660978852664e-11,
+    "horizontal_speed": 3.650174992167319,
+    "course_drift_last10": -5.101163935705699e-11
+  },
+  {
+    "flight": "hood_river",
+    "requested_climb": 0.5,
+    "requested_turn": 15.0,
+    "command": [
+      0.471651162718471,
+      0.0,
+      5.124247369656893
+    ],
+    "rpm": 8330.56819061965,
+    "max_equilibrium_residual": 5.390010321881594e-13,
+    "solver_success": true,
+    "achieved_climb": 0.500000000000001,
+    "achieved_turn": 14.99999999955432,
+    "turn_std": 5.401734451228747e-11,
+    "horizontal_speed": 3.6877189649986266,
+    "course_drift_last10": -9.334577555364376e-11
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.0,
+    "requested_turn": -15.0,
+    "command": [
+      0.4493798373981162,
+      7.137823365886459,
+      0.0
+    ],
+    "rpm": 7971.945636879006,
+    "max_equilibrium_residual": 8.799782955556455e-13,
+    "solver_success": true,
+    "achieved_climb": -1.242237507162496e-13,
+    "achieved_turn": -14.999999999988162,
+    "turn_std": 1.1607078330590096e-12,
+    "horizontal_speed": 4.399928101743638,
+    "course_drift_last10": 4.760636329592671e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.0,
+    "requested_turn": -10.0,
+    "command": [
+      0.44670477953154736,
+      3.9873665088865327,
+      0.0
+    ],
+    "rpm": 7928.762837618869,
+    "max_equilibrium_residual": 4.404705432331121e-13,
+    "solver_success": true,
+    "achieved_climb": 3.5609123494539996e-13,
+    "achieved_turn": -9.999999999999357,
+    "turn_std": 7.546074582548146e-13,
+    "horizontal_speed": 4.410467208799433,
+    "course_drift_last10": -3.268496584496461e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.0,
+    "requested_turn": 0.0,
+    "command": [
+      0.4458960456275361,
+      0.0,
+      3.747198112035984
+    ],
+    "rpm": 7915.702997265796,
+    "max_equilibrium_residual": 2.6823784525133942e-11,
+    "solver_success": true,
+    "achieved_climb": 1.1338374286351547e-11,
+    "achieved_turn": -1.809569628555302e-11,
+    "turn_std": 1.175752121405552e-13,
+    "horizontal_speed": 4.382873735053181,
+    "course_drift_last10": 6.182203162096546e-15
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.0,
+    "requested_turn": 10.0,
+    "command": [
+      0.4503585049648016,
+      0.0,
+      10.269427714152279
+    ],
+    "rpm": 7987.738147780277,
+    "max_equilibrium_residual": 1.045761395540002e-11,
+    "solver_success": true,
+    "achieved_climb": -1.2011051729795382e-12,
+    "achieved_turn": 9.999999999872493,
+    "turn_std": 8.765357793367209e-13,
+    "horizontal_speed": 4.309594811719271,
+    "course_drift_last10": 1.4566126083082054e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.0,
+    "requested_turn": 15.0,
+    "command": [
+      0.45306120986616427,
+      0.0,
+      13.01176728200488
+    ],
+    "rpm": 8031.334740682001,
+    "max_equilibrium_residual": 5.7230681177941166e-12,
+    "solver_success": true,
+    "achieved_climb": 2.525984175297134e-12,
+    "achieved_turn": 14.999999999984885,
+    "turn_std": 1.2689860800924978e-12,
+    "horizontal_speed": 4.300077307600355,
+    "course_drift_last10": 2.540190280342358e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.5,
+    "requested_turn": -15.0,
+    "command": [
+      0.5243523612507843,
+      2.395991785352617,
+      0.0
+    ],
+    "rpm": 9173.167476233522,
+    "max_equilibrium_residual": 1.1674931265538517e-11,
+    "solver_success": true,
+    "achieved_climb": 0.4999999999993837,
+    "achieved_turn": -14.99999999889149,
+    "turn_std": 1.2005572375543178e-12,
+    "horizontal_speed": 4.431344315889615,
+    "course_drift_last10": 4.085620730620576e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.5,
+    "requested_turn": -10.0,
+    "command": [
+      0.5223055197661582,
+      0.0,
+      0.34580287583471236
+    ],
+    "rpm": 9140.59166627034,
+    "max_equilibrium_residual": 1.8138401104364648e-12,
+    "solver_success": true,
+    "achieved_climb": 0.4999999999994666,
+    "achieved_turn": -10.00000000005822,
+    "turn_std": 9.033837101028236e-13,
+    "horizontal_speed": 4.416697776819929,
+    "course_drift_last10": -5.186961971048731e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.5,
+    "requested_turn": 0.0,
+    "command": [
+      0.5253415455841325,
+      0.0,
+      6.181522525709506
+    ],
+    "rpm": 9188.906334867732,
+    "max_equilibrium_residual": 2.4269329989726922e-11,
+    "solver_success": true,
+    "achieved_climb": 0.49999999999804595,
+    "achieved_turn": -3.651190124083514e-09,
+    "turn_std": 1.775906207697944e-13,
+    "horizontal_speed": 4.293379822965748,
+    "course_drift_last10": -2.49792813295412e-13
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.5,
+    "requested_turn": 10.0,
+    "command": [
+      0.528732164038896,
+      0.0,
+      10.58264395945816
+    ],
+    "rpm": 9242.833761961048,
+    "max_equilibrium_residual": 1.7263327319918233e-11,
+    "solver_success": true,
+    "achieved_climb": 0.49999999999742406,
+    "achieved_turn": 9.999999999687322,
+    "turn_std": 1.2309164351938563e-12,
+    "horizontal_speed": 4.252419214657223,
+    "course_drift_last10": 3.197442310920451e-14
+  },
+  {
+    "flight": "trout_lake",
+    "requested_climb": 0.5,
+    "requested_turn": 15.0,
+    "command": [
+      0.5305460148743533,
+      0.0,
+      12.40400394163505
+    ],
+    "rpm": 9271.669878259729,
+    "max_equilibrium_residual": 1.10239926758235e-11,
+    "solver_success": true,
+    "achieved_climb": 0.4999999999950002,
+    "achieved_turn": 15.000000000085182,
+    "turn_std": 9.506608875791878e-13,
+    "horizontal_speed": 4.260010765706809,
+    "course_drift_last10": -3.055333763768431e-13
+  }
+]
