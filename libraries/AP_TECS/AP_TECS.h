@@ -523,6 +523,8 @@ private:
     struct Paraglider_Params {
         AP_Int8 enable;
         AP_Float pr_filt_hz;
+        AP_Float pr_wash_hz;
+        AP_Float hgt_rate_tconst;
 
         static const AP_Param::GroupInfo var_info[];
     } _pg_params;
@@ -530,6 +532,8 @@ private:
 
     // Pitch-rate low-pass filter for damper (initialized in reset)
     LowPassFilterFloat _pg_pitch_rate_lpf;
+    LowPassFilterFloat _pg_pitch_rate_wash;
+    float _pg_hgt_rate_ff = 0.0f;
 
     void _update_paraglider_hgt_demand(void);
 

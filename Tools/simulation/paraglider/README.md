@@ -171,3 +171,13 @@ uses the second half of each run, with a constant and linear trend included.
 The 0.02–8 Hz plotted curve extends beyond those validation frequencies.
 This characterizes the model locally; it does not establish aircraft frequency
 response, include native EKF/controller delays, or provide closed-loop margins.
+
+## Mission longitudinal candidate
+
+The two-revision native controller study and reproduction commands are in
+[LONGITUDINAL-STUDY.md](LONGITUDINAL-STUDY.md). Load
+`mission-controller-candidate.json` through `PG_CONTROLLER_CONFIG` in the AUTO
+comparison harness, or apply `mission-controller-candidate.parm` after the
+existing SITL defaults. These are simulator development settings, not aircraft
+flight tuning. The candidate uses calibrated feedforward and smooth altitude
+captures with the pitch damper off. Generic defaults are unchanged.
