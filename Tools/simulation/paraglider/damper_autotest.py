@@ -9,6 +9,20 @@ os.environ['PG_GAINS']='original'
 os.environ['PG_SAMPLE_DIVISOR']='8'
 import compare_autotest as harness
 
+# Diagnostic intervention: retain native TECS, but remove lateral actuator forcing.
+if os.environ.get('PG_FIXED_BRAKES') == '1':
+    class FixedBrakeBackend(harness.Backend):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            step = self.sim.step_actuated
+            brakes = self.trim['command'][1:].copy()
+            def fixed_step(state, rpm, actuator, command, **options):
+                command = np.array(command, copy=True)
+                command[1:] = brakes
+                return step(state, rpm, actuator, command, **options)
+            self.sim.step_actuated = fixed_step
+    harness.Backend = FixedBrakeBackend
+
 
 def experiment(self):
     harness.airborne(self,altitude=100)
@@ -33,6 +47,7 @@ def experiment(self):
         event.update(time_s=backend.time,gain=gain,kick_body_pitch_rate_deg_s=5,
                      state_before=backend.state.tolist(),state_after=state.tolist(),
                      mass_kg=backend.sim.geometry['mass'],profile='mission',
+                     fixed_brakes=os.environ.get('PG_FIXED_BRAKES') == '1',brake_trim_mm=backend.trim['command'][1:].tolist(),
                      filter_hz=10,sign_equation='delta_throttle = -gain * filtered_body_pitch_rate_rad_s')
         backend.sim.step_actuated=original_step
         return original_step(state,rpm,actuator,command,**kwargs)
