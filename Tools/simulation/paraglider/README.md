@@ -186,3 +186,12 @@ comparison harness, or apply `mission-controller-candidate.parm` after the
 existing SITL defaults. These are simulator development settings, not aircraft
 flight tuning. The candidate uses calibrated feedforward and smooth altitude
 captures with the pitch damper off. Generic defaults are unchanged.
+
+### Optional viewer truth-state output
+
+Run json_backend.py with --viewer-port 9010 to send microagu.state.v1 JSON
+frames to localhost over nonblocking UDP at 30 simulation Hz (--viewer-hz changes
+the rate). Disabled by default. Includes both bodies' full state, relative joint
+rotation/rate, actual brake position, throttle, RPM, voltage and release status.
+No sensor/control behavior changes. The Three.js viewer, bridge, schema and replay
+converter live in the ArduPilot-tinkering repository under viewer/.
