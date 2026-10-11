@@ -28,7 +28,9 @@
       "THR_MAX": 60,
       "THR_MIN": 0,
       "THR_SLEWRATE": 100,
-      "TRIM_THROTTLE": 45
+      "TRIM_THROTTLE": 45,
+      "FWD_BAT_VOLT_MAX": 0,
+      "FWD_BAT_VOLT_MIN": 0
     },
     "profile": "dynamic_roll"
   },
@@ -61,7 +63,9 @@
       "THR_MAX": 60,
       "THR_MIN": 0,
       "THR_SLEWRATE": 100,
-      "TRIM_THROTTLE": 45
+      "TRIM_THROTTLE": 45,
+      "FWD_BAT_VOLT_MAX": 0,
+      "FWD_BAT_VOLT_MIN": 0
     },
     "voltage": 20.4
   }

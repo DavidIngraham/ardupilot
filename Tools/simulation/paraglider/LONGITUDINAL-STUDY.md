@@ -122,7 +122,8 @@ The smoothing-only ablation reduced climb-capture peak pitch rate from 64.06 to
 14.74 deg/s, with height RMSE increasing from 0.06 to 0.08 m. Sustained right/left
 turn-rate RMSE was 0.31/0.14 deg/s. The softer-roll model remained well behaved.
 At 20.4 V, climb height RMSE increased to 0.48 m without throttle saturation;
-voltage-aware feedforward remains useful future work.
+native voltage compensation was disabled in this original study. The corrected
+voltage experiment below supersedes the proposed new-feedforward work.
 
 The existing extended AUTO test PASSED, including opposing loiters, altitude,
 corner, home-loiter and controller-handover checks. Its 1,200-second mission
@@ -131,3 +132,66 @@ First-loiter bank standard deviation was 0.039 deg versus 2.60 deg for the
 high-DOF original gains. Median radii were 26.74/26.68 m for 25 m commands.
 Steadier motion costs slightly larger radius/corner errors than that baseline.
 The model and controller still require flight validation; these are SITL results.
+
+## Native voltage-compensation correction (11 October 2026)
+
+The existing `ArduPlane/servos.cpp` compensation was previously disabled by
+`FWD_BAT_VOLT_MAX=0` and a disabled SITL battery monitor. The JSON adapter also
+omitted its motor-model voltage. It now publishes that voltage, and `sitl.parm`
+enables `BATT_MONITOR=3` (voltage only), voltage pin 13 and multiplier 10.1.
+There is no current/discharge model. `mission-controller-candidate` and the SITL
+overlay set `FWD_BAT_VOLT_MAX=22.2`, `FWD_BAT_VOLT_MIN=18`, `FWD_BAT_IDX=0`.
+The reference matches the existing throttle calibration, not full-charge 6S.
+The bounds clamp compensation; only 22.2 V and 20.4 V were evaluated here.
+
+Reproduce the four matched FBWB cases:
+
+```sh
+python Tools/simulation/paraglider/run_longitudinal_study.py Tools/simulation/paraglider/study-voltage-compensation.json
+python Tools/simulation/paraglider/analyze_longitudinal_study.py /home/david/repos/pg-longitudinal-design --cases voltage_22_2_off voltage_22_2_on voltage_20_4_off voltage_20_4_on --output /tmp/pg-voltage-report
+```
+
+The original study-initial/revision1/revision2/validation configurations now
+explicitly disable compensation to preserve their historical comparisons.
+The new voltage study uses the current candidate. The analyzer records battery
+voltage and uses the compensated output limit when counting saturation.
+
+Native output scaling is `c=22.2/clamp(V,18,22.2)`. At 20.4 V, `c=1.08824` and
+the integer-percent physical throttle ceiling rises from 60% to 65%. Native
+Plane returns that limit to TECS, so the climb feedforward slope becomes
+`(0.65-0.45)/1=0.20` before output scaling, versus 0.15 at 22.2 V. The vertical
+speed PI gain also grows with the limit. The corrected standalone longitudinal
+analysis includes this behavior; it does not assume only a feedforward offset
+or silently change the flight-controller implementation.
+
+All four native FBWB runs completed. At nominal voltage, climb height RMSE was
+0.1332 m off and 0.1334 m on. At 20.4 V it improved from 0.4855 to 0.2504 m;
+level-phase height RMSE improved from 0.6333 to 0.0156 m. Climb-capture height
+RMSE increased from 0.0958 to 0.1692 m. The compensation is useful, but the
+changed native feedforward slope leaves a capture tradeoff. Damper and lateral
+gains are unchanged. Logged voltage agrees with physics to less than 0.01 V,
+and settled PWM agrees with compensated TECS output within 0.002 throttle
+fraction (median absolute error, including PWM quantization and scheduler delay).
+
+Run the unchanged extended AUTO test at each voltage, sequentially:
+
+```sh
+PG_GAINS=original PG_VOLTAGE=22.2 PG_CONTROLLER_CONFIG=Tools/simulation/paraglider/mission-controller-candidate.json BUILDLOGS=/home/david/repos/pg-longitudinal-design/voltage_auto_22_2 python Tools/simulation/paraglider/compare_autotest.py --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderAutoMission
+PG_GAINS=original PG_VOLTAGE=20.4 PG_CONTROLLER_CONFIG=Tools/simulation/paraglider/mission-controller-candidate.json BUILDLOGS=/home/david/repos/pg-longitudinal-design/voltage_auto_20_4 python Tools/simulation/paraglider/compare_autotest.py --no-check-parameter-leaks --speedup 10 test.Plane.ParagliderAutoMission
+```
+
+Final plots and plotting sources are archived in ArduPilot-tinkering. Local
+reports are in Mission Planner's `turn-model-spike/voltage-compensation` and
+`classical-longitudinal-compensated`; raw native data stay in the run directories.
+
+Both extended AUTO runs passed the unchanged altitude, corner, opposing-loiter
+and handover checks. Maximum waypoint altitude error was
+1.669/1.679 m at 22.2/20.4 V; maximum corner overshoot was
+0.947/2.893 m. Thus completion does not imply identical corner performance.
+The saved BIN logs confirm voltage and compensation settings for each mission.
+
+The AUTO wrapper also now captures its flight BIN before the original test
+resets SITL, preventing a newer startup BIN from being mistaken for the mission
+log. The 20.4 V flight BIN was recovered from the completed run; the 22.2 V
+mission was repeated with the corrected capture wrapper. A focused success /
+failure-path check also verified preservation across multiple resets.

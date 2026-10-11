@@ -21,7 +21,8 @@ from pymavlink import mavutil
 
 
 def airborne(self, altitude=60, **kwargs):
-    backend=Backend(profile=os.environ.get('PG_PROFILE','mission'), altitude=altitude)
+    backend=Backend(profile=os.environ.get('PG_PROFILE','mission'), altitude=altitude,
+                    voltage=float(os.environ.get('PG_VOLTAGE', '22.2')))
     stop=threading.Event()
     errors=[]
     samples=[]
@@ -69,21 +70,38 @@ def airborne(self, altitude=60, **kwargs):
 original=arduplane.AutoTestPlane.ParagliderAutoMission
 
 def mission(self):
+    reset = self.reset_SITL_commandline
+    captured = False
+
+    def capture_then_reset(*args, **kwargs):
+        nonlocal captured
+        # The original AUTO test resets SITL before returning. Save the flying
+        # log before that reset creates a newer, unrelated startup log.
+        if hasattr(self, '_pg_backend') and self._pg_backend[0].released and not captured:
+            logs = list((ROOT / 'logs').glob('*.BIN'))
+            if logs:
+                shutil.copy2(max(logs, key=lambda p: p.stat().st_mtime), self.buildlogs_path('flight.BIN'))
+                captured = True
+        return reset(*args, **kwargs)
+
+    self.reset_SITL_commandline = capture_then_reset
     try:
         original(self)
     finally:
-        if hasattr(self,'_pg_backend'):
-            backend,stop,thread,errors,samples=self._pg_backend
-            logs=list((ROOT/"logs").glob("*.BIN"))
-            if logs:shutil.copy2(max(logs,key=lambda p:p.stat().st_mtime),self.buildlogs_path("flight.BIN"))
-            self.reset_SITL_commandline()
-            stop.set();thread.join(timeout=2)
-            np.savez_compressed(self.buildlogs_path("high-dof-trace.npz"), samples=np.array(samples))
-            Path(self.buildlogs_path('high-dof-backend.json')).write_text(json.dumps(dict(
-                profile=os.environ.get('PG_PROFILE','mission'),
-                gains=os.environ.get('PG_GAINS','conservative'),
-                time_s=backend.time,clipped_packets=backend.clipped_packets,
-                state=backend.state.tolist(),errors=errors),indent=2))
+        try:
+            if hasattr(self, '_pg_backend'):
+                backend, stop, thread, errors, samples = self._pg_backend
+                self.reset_SITL_commandline()
+                stop.set()
+                thread.join(timeout=2)
+                np.savez_compressed(self.buildlogs_path('high-dof-trace.npz'), samples=np.array(samples))
+                Path(self.buildlogs_path('high-dof-backend.json')).write_text(json.dumps(dict(
+                    profile=os.environ.get('PG_PROFILE', 'mission'),
+                    gains=os.environ.get('PG_GAINS', 'conservative'),
+                    time_s=backend.time, voltage=backend.voltage, clipped_packets=backend.clipped_packets,
+                    state=backend.state.tolist(), errors=errors), indent=2))
+        finally:
+            self.reset_SITL_commandline = reset
 
 mission.__name__='ParagliderAutoMission'
 mission.__doc__=original.__doc__
