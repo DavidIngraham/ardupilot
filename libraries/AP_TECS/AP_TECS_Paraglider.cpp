@@ -38,6 +38,14 @@ const AP_Param::GroupInfo AP_TECS::Paraglider_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HR_TC", 3, AP_TECS::Paraglider_Params, hgt_rate_tconst, 0.0f),
 
+    // @Param: PR_FILT2
+    // @DisplayName: Paraglider pitch-rate second filter frequency
+    // @Description: Optional second first-order low-pass after PR_FILT, before washout. Each cutoff is per stage. Zero bypasses this stage and preserves the original filter. Used to reduce damper feedback into faster coupled modes.
+    // @Range: 0 20
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("PR_FILT2", 4, AP_TECS::Paraglider_Params, pr_filt2_hz, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -48,10 +56,13 @@ void AP_TECS::_update_pitch_rate(float dt)
         const Vector3f &gyro = _ahrs.get_gyro();
         _pg_pitch_rate_lpf.set_cutoff_frequency(_pg_params.pr_filt_hz);
         _pg_pitch_rate_lpf.apply(gyro.y, dt);
+        _pg_pitch_rate_lpf2.set_cutoff_frequency(MAX(_pg_params.pr_filt2_hz.get(), 0.0f));
+        _pg_pitch_rate_lpf2.apply(_pg_pitch_rate_lpf.get(), dt);
         _pg_pitch_rate_wash.set_cutoff_frequency(MAX(_pg_params.pr_wash_hz.get(), 0.0f));
-        _pg_pitch_rate_wash.apply(_pg_pitch_rate_lpf.get(), dt);
+        _pg_pitch_rate_wash.apply(_pg_pitch_rate_lpf2.get(), dt);
     } else {
         _pg_pitch_rate_lpf.reset(0.0f);
+        _pg_pitch_rate_lpf2.reset(0.0f);
         _pg_pitch_rate_wash.reset(0.0f);
     }
 }
@@ -60,6 +71,8 @@ void AP_TECS::_reset_paraglider(void)
 {
     _pg_pitch_rate_lpf.set_cutoff_frequency(_pg_params.pr_filt_hz);
     _pg_pitch_rate_lpf.reset();
+    _pg_pitch_rate_lpf2.set_cutoff_frequency(MAX(_pg_params.pr_filt2_hz.get(), 0.0f));
+    _pg_pitch_rate_lpf2.reset();
     _pg_pitch_rate_wash.reset();
     _pg_hgt_rate_ff = 0.0f;
     reset_throttle_I();
@@ -214,7 +227,7 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
     if (!is_zero(_land_pitch_damp) && _flags.is_doing_auto_land) {
         pitch_damp = _land_pitch_damp;
     }
-    const float pitch_rate = _pg_pitch_rate_lpf.get() -
+    const float pitch_rate = _pg_pitch_rate_lpf2.get() -
         (is_positive(_pg_params.pr_wash_hz.get()) ? _pg_pitch_rate_wash.get() : 0.0f);
     float pr_damp = -pitch_damp * pitch_rate;
     pr_damp = constrain_float(pr_damp, -0.25f, 0.25f);
