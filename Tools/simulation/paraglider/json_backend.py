@@ -70,6 +70,7 @@ class Backend:
         specific_force = rotation.inv().apply(acceleration-[0, 0, 9.80665])
         self.time += dt
         message = dict(timestamp=self.time,
+                       battery=dict(voltage=self.voltage),
                        imu=dict(gyro=obs['body_rates_rad_s'].tolist(),
                                 accel_body=specific_force.tolist()),
                        position=obs['position_ned_m'].tolist(),

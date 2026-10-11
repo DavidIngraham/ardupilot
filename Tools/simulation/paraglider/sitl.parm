@@ -28,5 +28,13 @@ PG_TURN_FF 0.051
 TECS_PTCH_DAMP 0
 THR_MAX 60
 TRIM_THROTTLE 43
-# Keep avionics running while airborne initialization waits for release.
-BATT_MONITOR 0
+# Voltage-only SITL monitor; JSON backend supplies the physics voltage.
+# No current/discharge model is provided by this research backend.
+BATT_MONITOR 3
+BATT_VOLT_PIN 13
+BATT_VOLT_MULT 10.1
+# Reference matches the existing 22.2 V throttle calibration, not full-charge 6S.
+# Compensation is clamped below 18 V and above 22.2 V; tested at 20.4/22.2 V.
+FWD_BAT_VOLT_MAX 22.2
+FWD_BAT_VOLT_MIN 18
+FWD_BAT_IDX 0
