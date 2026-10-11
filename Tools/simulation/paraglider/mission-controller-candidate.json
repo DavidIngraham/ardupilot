@@ -27,7 +27,10 @@
     "THR_MAX": 60,
     "THR_MIN": 0,
     "THR_SLEWRATE": 100,
-    "TRIM_THROTTLE": 45
+    "TRIM_THROTTLE": 45,
+    "FWD_BAT_VOLT_MAX": 22.2,
+    "FWD_BAT_VOLT_MIN": 18,
+    "FWD_BAT_IDX": 0
   },
-  "description": "Native SITL mission candidate for the calibrated Trout Lake high-DOF model. Not flight tuning."
+  "description": "Native SITL mission candidate for the calibrated Trout Lake 9-DOF model. Not flight tuning."
 }

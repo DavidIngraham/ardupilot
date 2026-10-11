@@ -1,1 +1,1 @@
-{"ablation":{"ablation":true},"baseline":{},"fixed_baseline":{"fixed_brakes":true}}
+{"ablation":{"ablation":true,"parameters":{"FWD_BAT_VOLT_MAX":0,"FWD_BAT_VOLT_MIN":0}},"baseline":{"parameters":{"FWD_BAT_VOLT_MAX":0,"FWD_BAT_VOLT_MIN":0}},"fixed_baseline":{"fixed_brakes":true,"parameters":{"FWD_BAT_VOLT_MAX":0,"FWD_BAT_VOLT_MIN":0}}}

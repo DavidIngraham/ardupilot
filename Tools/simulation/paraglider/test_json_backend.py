@@ -14,13 +14,14 @@ class ProtocolTests(unittest.TestCase):
             with self.assertRaises(ValueError):decode_packet(p)
 
     def test_physics_and_retransmission(self):
-        b=Backend()
+        b=Backend(voltage=20.4)
         pwm=[1000]*16
         pwm[0]=round(1000+1000*b.trim['command'][0])
         pwm[2]=round(800+b.trim['command'][1]/(np.pi*55/360*.1))
         pwm[3]=round(2400-b.trim['command'][2]/(np.pi*55/360*.1))
         packet=lambda frame:struct.pack('<HHI16H',18458,400,frame,*pwm)
         initial=json.loads(b.respond(packet(0)))
+        self.assertEqual(initial['battery']['voltage'], 20.4)
         np.testing.assert_allclose(np.linalg.norm(initial['imu']['accel_body']),9.80665,atol=1e-8)
         self.assertLess(initial['position'][2],-99)
         b.released=True
@@ -28,6 +29,7 @@ class ProtocolTests(unittest.TestCase):
             reply=b.respond(packet(i))
             self.assertEqual(reply,b.respond(packet(i)))
         final=json.loads(reply)
+        self.assertEqual(final['battery']['voltage'], 20.4)
         self.assertAlmostEqual(final['timestamp'],1.0025)
         self.assertEqual(b.clipped_packets,0)
         self.assertLess(abs(final['velocity'][2]),.1)

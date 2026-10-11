@@ -27,3 +27,8 @@ THR_MAX 60
 THR_MIN 0
 THR_SLEWRATE 100
 TRIM_THROTTLE 45
+
+# Match the 22.2 V feedforward calibration; output compensation is native.
+FWD_BAT_VOLT_MAX 22.2
+FWD_BAT_VOLT_MIN 18
+FWD_BAT_IDX 0

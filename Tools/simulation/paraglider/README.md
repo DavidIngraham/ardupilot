@@ -66,7 +66,12 @@ native AUTO mission performance.
 The adapter sends payload IMU position, velocity, body gyro and specific force,
 NED position, Euler attitude, and true airspeed. Acceleration is the finite
 difference of IMU velocity, including the modeled lever arm. Wind is currently
-zero and voltage constant. Duplicate UDP frames resend their cached sensor state;
+zero and voltage constant. The JSON battery voltage matches the motor model
+voltage. The SITL overlay enables a voltage-only monitor and native forward
+throttle compensation, referenced to the existing 22.2 V calibration (not a
+25.2 V full-charge calibration). Use --voltage for the backend or PG_VOLTAGE
+for the AUTO harness. Current and battery discharge are not modeled.
+Duplicate UDP frames resend their cached sensor state;
 frame gaps/restarts fail explicitly. Out-of-range startup PWM is bounded to the
 logged ranges, with a counter exposed as `clipped_packets`. Both JSON servo packet
 sizes are supported. Timing follows SITL, with physics substeps at most 1.25 ms.
