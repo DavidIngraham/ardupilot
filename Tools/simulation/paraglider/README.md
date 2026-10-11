@@ -185,7 +185,7 @@ The two-revision native controller study and reproduction commands are in
 comparison harness, or apply `mission-controller-candidate.parm` after the
 existing SITL defaults. These are simulator development settings, not aircraft
 flight tuning. The candidate uses calibrated feedforward and smooth altitude
-captures with the pitch damper off. Generic defaults are unchanged.
+captures with frequency-shaped pitch-rate damping. The [gust-control study](GUST-CONTROL.md) documents the two filter stages and native validation. Generic defaults are unchanged.
 
 ### Optional viewer truth-state output
 

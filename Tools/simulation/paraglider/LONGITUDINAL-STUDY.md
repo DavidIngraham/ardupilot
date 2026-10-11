@@ -195,3 +195,11 @@ resets SITL, preventing a newer startup BIN from being mistaken for the mission
 log. The 20.4 V flight BIN was recovered from the completed run; the 22.2 V
 mission was repeated with the corrected capture wrapper. A focused success /
 failure-path check also verified preservation across multiple resets.
+
+
+## Gust-response follow-up
+
+The later [gust-control study](GUST-CONTROL.md) adds an optional second pitch-rate
+filter and updates the mission candidate to gain 0.1 with two 1.5 Hz stages.
+The voltage-compensation results above describe the earlier damper-off version;
+the gust study records the validation of the new candidate separately.
