@@ -28,6 +28,22 @@ class ProtocolTests(unittest.TestCase):
         for i in range(1,401):
             reply=b.respond(packet(i))
             self.assertEqual(reply,b.respond(packet(i)))
+        truth = b.viewer_state()
+        self.assertEqual(truth['schema'], 'microagu.state.v1')
+        self.assertEqual(truth['time_s'], b.time)
+        self.assertEqual(truth['state'], b.state.tolist())
+        self.assertEqual(truth['brake_mm'], b.actuator.position.tolist())
+        self.assertEqual(truth['throttle'], b.command[0])
+        self.assertEqual(truth['voltage_v'], 20.4)
+        # Export is read-only and serializable, including after duplicate delivery.
+        snapshot = b.state.copy()
+        json.dumps(b.viewer_state(), allow_nan=False)
+        np.testing.assert_array_equal(snapshot, b.state)
+        from scipy.spatial.transform import Rotation
+        rp = Rotation.from_quat(b.state[3:7])
+        rc = Rotation.from_quat(b.state[16:20])
+        np.testing.assert_allclose(truth['joint_rotvec_rad'], (rp.inv()*rc).as_rotvec())
+        np.testing.assert_allclose(truth['joint_rate_rad_s'], rp.inv().apply(b.state[23:26]-b.state[10:13]))
         final=json.loads(reply)
         self.assertEqual(final['battery']['voltage'], 20.4)
         self.assertAlmostEqual(final['timestamp'],1.0025)
