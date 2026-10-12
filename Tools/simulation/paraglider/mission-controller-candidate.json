@@ -23,7 +23,7 @@
     "TECS_SINK_MIN": 2.5,
     "TECS_TIME_CONST": 5,
     "TECS_INTEG_GAIN": 0.3,
-    "TECS_VERT_ACC": 7,
+    "TECS_VERT_ACC": 3.5,
     "THR_MAX": 60,
     "THR_MIN": 0,
     "THR_SLEWRATE": 100,
@@ -33,5 +33,5 @@
     "FWD_BAT_IDX": 0,
     "TECS_PG_PR_FILT2": 1.5
   },
-  "description": "Native mission development candidate: calibrated feedforward, smooth altitude capture, voltage compensation and two-stage pitch-rate damping for synthetic gusts. SITL research settings."
+  "description": "Native mission development candidate: calibrated feedforward, smooth altitude capture, voltage compensation, two-stage pitch-rate damping and doubled climb-rate PI selected by full-loop classical analysis and native calm/gust AUTO checks. SITL research settings."
 }
