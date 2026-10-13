@@ -24,6 +24,10 @@ CASE = os.environ.get('PG_LANDING_CASE', 'nominal')
 if CASE not in ('nominal', 'weak', 'strong', 'crosswind', 'abort', 'takeover', 'disabled', 'timed', 'reserve'):
     raise ValueError('Unknown landing case: ' + CASE)
 CONFIG = json.loads(Path(os.environ['PG_LANDING_CONFIG']).read_text()) if os.environ.get('PG_LANDING_CONFIG') else {}
+# Ordinary landing tests share the complete mission controller. Explicit study
+# overrides retain their existing behavior for reproducible archived runs.
+if 'PG_CONTROLLER_CONFIG' not in os.environ and 'PG_GAINS' not in os.environ:
+    os.environ['PG_CONTROLLER_CONFIG'] = str(Path(__file__).with_name('mission-controller-candidate.json'))
 os.environ.setdefault('PG_GAINS', 'mission')
 os.environ['PG_SAMPLE_DIVISOR'] = '8'
 

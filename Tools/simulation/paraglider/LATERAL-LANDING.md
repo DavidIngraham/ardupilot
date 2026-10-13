@@ -5,13 +5,16 @@ RDAMP=0.003, D_FF=0 and FILT=1 Hz. The other command limits and gains are
 unchanged. Load mission-controller-candidate.parm after the model defaults
 and sitl.parm for the complete development controller.
 
-The landing harness now defaults PG_GAINS to mission. compare_autotest.py
-resolves that preset's PG_TURN parameters from the same JSON file, leaving the
-landing study's longitudinal setup unchanged. An explicit PG_CONTROLLER_CONFIG
-still takes precedence; PG_GAINS=original reproduces the old lateral preset.
-This prevents the landing harness from silently reinstating the old aggressive
-feedback. Generic firmware defaults and existing vehicle parameters are not
-rewritten by this opt-in simulation profile.
+The landing harness defaults to the complete mission-controller-candidate.json
+when neither PG_CONTROLLER_CONFIG nor PG_GAINS is explicitly set. This includes
+the current longitudinal tuning as well as the selected lateral filter. An
+explicit configuration still takes precedence. Explicit PG_GAINS=mission retains
+the lateral-only preset for archived studies, and PG_GAINS=original retains the
+old lateral preset. Generic firmware defaults and existing vehicle parameters
+are not rewritten by this opt-in simulation profile.
+
+The current landing study is documented under `Complete-profile refinement`
+below. The earlier evidence is retained as the record of the initial diagnosis.
 
 ## Evidence
 
@@ -56,3 +59,35 @@ Compared with the matched 4-Hz references, calm loiter rate tracking improved.
 In gusts, left-turn rate error increased from 9.79 to 10.80 deg/s while radial
 error improved and brake content above 1 Hz fell about 42–44%. This is a known
 tradeoff, not a universal tracking improvement. No settled loiter saturated.
+
+## Complete-profile refinement
+
+The landing-refinement-2026-10-13 study reruns all twelve established conditions
+with both 4 Hz and 1 Hz filtering and the complete current longitudinal profile.
+All 24 native flights completed. Audited parameters differ only in PG_TURN_FILT.
+Truth heading-rate RMSE improves in nine conditions and brake-command variation
+improves in all twelve; worst RMSE across the set drops from 29.60 to 10.61 deg/s.
+Spot placement improves in six conditions, so reduced steering activity must not
+be presented as uniform touchdown-accuracy improvement.
+
+Nine local equilibria include straight descents, both descending turn directions,
+and partial common brake. The linear model uses the actual 50 Hz controller
+update and zero-order command hold, verified by SCHED_LOOP_RATE and PGYR timing.
+The earlier exploratory 400 Hz feedback calculation used the physics frame rate;
+its pole values are superseded by this analysis. The current 4 Hz baseline has a
+growing roughly 2 Hz mode in a 0.5 m/s descending right turn with 80–120 ms added
+command delay. The 1 Hz configuration remains locally stable across the sampled
+trims and delays. Small nonlinear response checks agree within 1.5e-5 relative
+error. The outer guidance, estimator and longitudinal loop are outside this local
+model; native landings evaluate their combined trajectory and flare behavior.
+
+The separate validation campaign uses twelve new conditions, seed 2026101307,
+with the complete 1 Hz profile fixed before inspecting them. Final figures,
+parameter audits, exact configs and plotting scripts are published in the
+ArduPilot-tinkering landing-refinement research record; raw data stays in Mission
+Planner. Reproduction scripts explicitly load the complete controller JSON.
+
+All twelve fresh validation landings completed within 5 m. Median miss was
+1.838 m, p90 2.549 m and worst 2.603 m; median downward speed was 1.374 m/s.
+These are results for the new seed, not a matched accuracy comparison with the
+previous Monte Carlo campaign.
