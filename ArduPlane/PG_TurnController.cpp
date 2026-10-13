@@ -148,6 +148,12 @@ float PG_TurnController::update(float target_dps, float measured_dps, float roll
     const float ff = MAX(_ff.get(), 0.0f) * _target * scale;
     const float p = MAX(_p.get(), 0.0f) * error * scale;
     const float rdamp = -MAX(_roll_damp.get(), 0.0f) * roll_rate * scale;
+    // Keep the PI arithmetic local: AC_PID's limit flag permits unwinding
+    // based on the integrator sign, whereas we reject increments that drive
+    // the combined FF + DFF + P + roll-damping + I output farther into saturation.
+    // Its target/error filters also do not replace our measurement-only filters
+    // and slew-limited target; DFF reset behavior differs on controller entry.
+    // Adapting these semantics would retain custom logic around AC_PID.
     if (!is_positive(_i.get())) {
         _integrator = 0;
     }
