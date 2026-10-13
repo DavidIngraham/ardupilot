@@ -305,3 +305,31 @@ The existing approach calculation uses them to estimate flare distance.
 An overly long estimated flare duration is a plausible source of the short
 bias; test that mechanism with matched settings comparisons and new held-out
 draws rather than treating a post-hoc shift of these landing points as validation.
+
+### One bounded landing-aim iteration
+
+The follow-up screened LAND_FLARE_AIM=0 against TECS_LAND_SINK=1.4 on the first
+four seed-20261013 conditions. The 1.4 m/s planning assumption was selected, with
+LAND_FLARE_AIM=50 and the existing 60% / 30%/s / 3 m flare held fixed.
+Twelve fresh seed-20261014 conditions then compared baseline and candidate.
+
+    python Tools/simulation/paraglider/landing_monte_carlo.py --output /path/to/heldout-baseline --count 12 --pairs 0 --seed 20261014
+    python Tools/simulation/paraglider/landing_monte_carlo.py --output /path/to/heldout-candidate --count 12 --pairs 0 --seed 20261014 --flare-sink 1.4 --record-viewer
+
+All 24 held-out runs completed. Median radial miss improved from 13.30 to 1.73 m;
+90th percentile from 15.34 to 3.77 m; within-5 m count from 0/12 to 12/12.
+All 12 paired misses improved. Median sink was 1.42 versus 1.41 m/s; p90 sink
+1.48 versus 1.55 m/s. This is a placement improvement, not evidence of softer impact.
+The test retains the landing harness's original turn-gain preset.
+
+The existing AP_Landing slope calculation mixes approach sink with
+TECS_LAND_SINK to estimate flare time and upstream aim distance. The original
+0.25 m/s assumption overestimated float time for this model. The candidate
+changes that planning assumption; it does not command closed-loop sink control
+during the fixed common-brake flare.
+
+Use landing-spot-candidate.parm as an explicit simulation overlay. Firmware
+PG_FLARE_PCT still defaults to zero. Full truth recording is opt-in and sampled
+at approximately 20 Hz to viewer.json; it does not feed state into the controller.
+The research article, held-out figure, log audits and presentation replay are in
+the tinkering repository's docs/spot-landing.md and docs/assets/landing.
