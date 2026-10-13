@@ -31,7 +31,9 @@
     "FWD_BAT_VOLT_MAX": 22.2,
     "FWD_BAT_VOLT_MIN": 18,
     "FWD_BAT_IDX": 0,
-    "TECS_PG_PR_FILT2": 1.5
+    "TECS_PG_PR_FILT2": 1.5,
+    "NAVL1_PERIOD": 10,
+    "NAVL1_DAMPING": 1
   },
-  "description": "Native 9-DOF mission development profile: mission lateral gains with 1 Hz measurement filtering, combined with the selected longitudinal controller. Matched landing and native AUTO validation; research settings, not flight-validated."
+  "description": "Native 9-DOF mission development profile: 10 s L1 guidance with damping 1.0, 1 Hz lateral measurement filtering, and the selected longitudinal controller. Validated across mission profiles and landing regressions; research settings, not flight-validated."
 }
