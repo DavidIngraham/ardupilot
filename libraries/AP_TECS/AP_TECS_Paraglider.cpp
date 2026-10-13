@@ -156,9 +156,12 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
 
     _pitch_dem = pitch_trim_deg * M_PI / 180.0f;
 
-    if (_flags.is_gliding) {
+    // Plane's existing landing suppression owns the final throttle output.
+    // Stop altitude feedback and damper wind-up while it is suppressing thrust.
+    if (_flags.is_gliding || (_flags.is_doing_auto_land && _landing.is_flaring())) {
         _throttle_dem = 0.0f;
         reset_throttle_I();
+        _last_throttle_dem = 0.0f;
         constrain_throttle();
         _log_TECS_state(now);
         return;
