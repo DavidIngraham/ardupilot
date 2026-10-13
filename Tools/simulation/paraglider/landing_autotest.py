@@ -51,6 +51,7 @@ class LandingBackend(harness.Backend):
         self.sim.parameters['CLbrake'] *= CONFIG.get('brake_lift_scale', factor)
         self.sim.parameters['CDbrake'] *= CONFIG.get('brake_drag_scale', factor)
         self.contact = None
+        self.viewer_frames = []
         original_step = self.sim.step_actuated
 
         def step(state, rpm, actuator, command, **options):
@@ -89,6 +90,9 @@ class LandingBackend(harness.Backend):
     def respond(self, data):
         """Report wind-relative airspeed consistently with the dynamics."""
         response = super().respond(data)
+        if CONFIG.get('record_viewer') and self.released:
+            if not self.viewer_frames or self.time >= self.viewer_frames[-1]['time_s'] + 0.05:
+                self.viewer_frames.append(self.viewer_state() | {'wind_ned_m_s': self.wind().tolist()})
         if CASE == 'crosswind' or CONFIG:
             message = json.loads(response)
             wind = self.wind()
@@ -111,6 +115,8 @@ def experiment(self):
         'PG_FLARE_RATE': 30, 'PG_FLARE_RES': 20,
         'LAND_FLARE_ALT': {'timed': 0, 'reserve': 8}.get(CASE, 3), 'LAND_FLARE_SEC': 3 if CASE == 'timed' else 0,
         'LAND_DISARMDELAY': 0, 'TECS_LAND_THR': -1,
+        'LAND_FLARE_AIM': CONFIG.get('flare_aim_pct', 50),
+        'TECS_LAND_SINK': CONFIG.get('flare_sink_m_s', 0.25),
     })
     north, east = backend.state[:2]
     east -= CONFIG.get('cross_track_error_m', 0)
@@ -154,6 +160,8 @@ def experiment(self):
         summary['along_track_error_m'] = float(error[0])
         summary['cross_track_error_m'] = float(error[1])
         summary['radial_error_m'] = float(np.linalg.norm(error[:2]))
+    if backend.viewer_frames:
+        Path(self.buildlogs_path('viewer.json')).write_text(json.dumps(backend.viewer_frames))
     Path(self.buildlogs_path('landing.json')).write_text(json.dumps(summary, indent=2))
     if CASE == 'abort':
         if action is None or summary['final_height'] < 20:
