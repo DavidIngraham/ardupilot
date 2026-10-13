@@ -37,25 +37,12 @@ static inline float smoothstep(float t)
     return t * t * (3.0f - 2.0f * t);
 }
 
-static inline float lerp(float a, float b, float t)
-{
-    return a + (b - a) * t;
-}
-
-// Explicit rotation about +Y, right-handed, for x-forward/y-right/z-down coordinates.
-// This is an active rotation matrix that maps vector components in the original frame
-// into the rotated frame.
+// Active pitch rotation in x-forward/y-right/z-down coordinates.
 static Matrix3f rot_y(float angle_rad)
 {
-    const float c = cosf(angle_rad);
-    const float s = sinf(angle_rad);
-
-    Matrix3f R;
-    // rows (a,b,c) for Matrix3f in ArduPilot
-    R.a = Vector3f{ c, 0.0f, s };
-    R.b = Vector3f{ 0.0f, 1.0f, 0.0f };
-    R.c = Vector3f{ -s, 0.0f, c };
-    return R;
+    Matrix3f rotation;
+    rotation.from_euler(0.0f, angle_rad, 0.0f);
+    return rotation;
 }
 
 
@@ -135,8 +122,8 @@ void Paraglider::eval_parafoil_coeffs(float alpha_rad,
     float CD_fp = CD_lin_cap + (CD90 - CD_lin_cap) * ((s2_alpha - s2_stall) / denom_cd);
     CD_fp = MAX(0.0f, CD_fp);
 
-    CL_out = lerp(CL_lin_cap, CL_fp, t);
-    CD_out = lerp(CD_lin_cap, CD_fp, t);
+    CL_out = linear_interpolate(CL_lin_cap, CL_fp, t, 0.0f, 1.0f);
+    CD_out = linear_interpolate(CD_lin_cap, CD_fp, t, 0.0f, 1.0f);
 }
 
 Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
@@ -200,7 +187,7 @@ Paraglider::ForceBreakdown Paraglider::compute_forces_bf(float brake_left_rad,
     if (V > 0.1f) {
         const float u_safe = clamp_preserve_sign(uP, 0.01f);
         out.alpha_pf_rad = atan2f(wP, u_safe);
-        out.beta_pf_rad = atan2f(vP, sqrtf(sq(uP) + sq(wP)));
+        out.beta_pf_rad = atan2f(vP, norm(uP, wP));
     } else {
         out.alpha_pf_rad = 0.0f;
         out.beta_pf_rad = 0.0f;
