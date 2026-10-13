@@ -91,3 +91,36 @@ All twelve fresh validation landings completed within 5 m. Median miss was
 1.838 m, p90 2.549 m and worst 2.603 m; median downward speed was 1.374 m/s.
 These are results for the new seed, not a matched accuracy comparison with the
 previous Monte Carlo campaign.
+
+
+## Whole-guidance-loop regression
+
+The complete development profile now explicitly selects NAVL1_PERIOD=10 seconds
+and NAVL1_DAMPING=1.0. Inner lateral and longitudinal gains remain unchanged.
+The earlier fixed-target linear analysis excluded waypoint guidance. A calm
+landing exposed a sustained outer-loop oscillation at the inherited 8-second
+period; increasing the period removes that large cycle.
+
+The 12-second intermediate candidate passed native mission and touchdown
+assertions but produced a severe oscillating approach in one randomized landing.
+Its repeat settled; the original failure is retained as evidence of sensitivity.
+It was not promoted. The 10-second candidate settled the calm approach and three
+runs of that difficult headwind/delayed-actuator condition.
+
+Forty-two fresh native SITL runs cover the parameter investigation and regression.
+The selected 10-second candidate passed the standard extended AUTO route in calm
+air, 2 m/s crosswind and synthetic gusts, plus 20 m calm and 45 m crosswind loiters.
+Each route includes climbs, descents, corners, opposing loiters and controller
+handover. All twelve randomized landing regression cases completed within 5 m:
+median miss 1.70 m, worst 2.51 m. Separate focused repeats reached 3.28 m miss.
+These reused landing cases are regression evidence, not fresh held-out validation.
+
+The selected setting preserves ordinary tracking, with tradeoffs: gusty left
+loiter radial RMS is 2.48 m versus 2.27 m at 8 seconds. Landing condition 07 has
+a larger transient roll excursion that settles before flare. Do not claim every
+metric improved or that arbitrary initializations have been proven stable.
+
+Reports, parameter audits, plots and reproduction scripts are archived in
+ArduPilot-tinkering/research/flight-log-analysis/l1-regression-2026-10-13.
+Raw recordings remain in Mission Planner. Generic firmware defaults and existing
+aircraft parameters are unchanged; load the complete opt-in development profile.

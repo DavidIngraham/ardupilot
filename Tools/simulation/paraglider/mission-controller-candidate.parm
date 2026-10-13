@@ -1,4 +1,7 @@
 # SITL research candidate. Load after paraglider.parm and sitl.parm.
+# Whole-guidance-loop mission and landing regression: 2026-10-13.
+NAVL1_PERIOD 10
+NAVL1_DAMPING 1.0
 PG_TURN_ENABLE 1
 PG_TURN_FF 0.009
 PG_TURN_P 0.005
