@@ -1,4 +1,5 @@
 # Opt-in 9-DOF SITL spot-landing candidate; not flight-validated.
+# Use with mission-controller-candidate.parm for the selected lateral gains.
 # Retain existing native AP_Landing trigger and moderate brake schedule.
 PG_FLARE_PCT 60
 PG_FLARE_RATE 30

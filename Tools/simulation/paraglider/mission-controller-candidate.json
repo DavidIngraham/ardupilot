@@ -7,7 +7,7 @@
     "PG_TURN_IMAX": 0.15,
     "PG_TURN_RMAX": 25,
     "PG_TURN_ACCEL": 40,
-    "PG_TURN_FILT": 4,
+    "PG_TURN_FILT": 1,
     "PG_TURN_TC": 0.1,
     "PG_TURN_ASPD": 5,
     "PG_TURN_RDAMP": 0.003,
@@ -33,5 +33,5 @@
     "FWD_BAT_IDX": 0,
     "TECS_PG_PR_FILT2": 1.5
   },
-  "description": "Native mission development candidate: calibrated feedforward, smooth altitude capture, voltage compensation, two-stage pitch-rate damping and doubled climb-rate PI selected by full-loop classical analysis and native calm/gust AUTO checks. SITL research settings."
+  "description": "Native 9-DOF mission development profile: mission lateral gains with 1 Hz measurement filtering, combined with the selected longitudinal controller. Matched landing and native AUTO validation; research settings, not flight-validated."
 }

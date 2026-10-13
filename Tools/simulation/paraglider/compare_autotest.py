@@ -1,6 +1,6 @@
 """Run the unchanged extended AUTO checks using airborne two-body initialization.
 
-PG_PROFILE selects mission/dynamic_roll. PG_GAINS selects original/conservative.
+PG_PROFILE selects mission/dynamic_roll. PG_GAINS selects original/conservative/mission.
 The original native launch is replaced; route, metrics and pass criteria are not.
 """
 from pathlib import Path
@@ -51,6 +51,12 @@ def airborne(self, altitude=60, **kwargs):
     if os.environ.get('PG_GAINS','conservative')=='original':
         self.set_parameters({'PG_TURN_P':.04,'PG_TURN_I':.002,'PG_TURN_RDAMP':.03,
                              'PG_TURN_D_FF':.02,'PG_TURN_FILT':4,'PG_TURN_RMAX':25})
+    elif os.environ.get('PG_GAINS') == 'mission':
+        # Share the selected lateral configuration without changing this test's
+        # independently configured longitudinal controller.
+        selected = json.loads(Path(__file__).with_name('mission-controller-candidate.json').read_text())
+        self.set_parameters({key: value for key, value in selected['parameters'].items()
+                             if key.startswith('PG_TURN_')})
     if os.environ.get('PG_CONTROLLER_CONFIG'):
         controller_config = json.loads(Path(os.environ['PG_CONTROLLER_CONFIG']).read_text())
         self.set_parameters(controller_config['parameters'])
