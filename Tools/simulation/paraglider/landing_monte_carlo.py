@@ -47,13 +47,20 @@ def main():
     parser.add_argument('--count', type=int, default=24)
     parser.add_argument('--pairs', type=int, default=8)
     parser.add_argument('--seed', type=int, default=20261013)
+    parser.add_argument('--flare-aim', type=float, default=50)
+    parser.add_argument('--flare-sink', type=float, default=0.25)
+    parser.add_argument('--record-viewer', action='store_true')
     args = parser.parse_args()
     if args.count < 1 or not 0 <= args.pairs <= args.count:
         parser.error('require count >= 1 and 0 <= pairs <= count')
+    if not 0 <= args.flare_aim <= 100 or not 0 <= args.flare_sink <= 2:
+        parser.error('require flare aim in [0, 100] and flare sink in [0, 2] m/s')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     manifest = output / 'manifest.json'
     trials = configurations(args.count, args.seed)
+    trials = [row | {'flare_aim_pct': args.flare_aim, 'flare_sink_m_s': args.flare_sink,
+                     'record_viewer': args.record_viewer} for row in trials]
     jobs = [('moderate', row) for row in trials]
     jobs += [('no_flare', row | {'flare_pct': 0}) for row in trials[:args.pairs]]
     content = {'seed': args.seed, 'count': args.count, 'pairs': args.pairs,
