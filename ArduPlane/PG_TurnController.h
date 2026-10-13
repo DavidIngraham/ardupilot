@@ -15,7 +15,7 @@ public:
     bool enabled() const { return _enable.get() != 0; }
     bool active() const { return _initialised; }
     void reset();
-    float update(float target_dps, float measured_dps, float roll_rate_dps, float airspeed, float dt);
+    float update(float target_dps, float measured_dps, float roll_rate_dps, float airspeed, float dt, float brake_limit = 1.0f);
 
 private:
     AP_Int8 _enable;

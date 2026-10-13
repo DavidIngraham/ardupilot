@@ -197,26 +197,58 @@ void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::
 
 /*
   Mixer for paraglider brake controls. This maps aileron demand to asymmetric brake.
-  Flare is only supported in Manual Mode (for now).
+  Automatic flare uses AP_Landing; manual flare uses the pitch stick.
   Full aileron demand corresponds to full asymmetric brake.
   Brake Outputs are in percent scaled 0-100%
 */
-void Plane::paraglider_brake_mixer(void) const
+void Plane::paraglider_brake_mixer(void)
 {
-    float pilot_flare_pct = 0;
+    float common_brake_pct = 0;
 
     if (control_mode == &mode_manual && channel_pitch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        pilot_flare_pct = constrain_float(channel_pitch->norm_input_dz(), 0, 1) * 100.0f; // Positive (nose up) only
+        common_brake_pct = constrain_float(channel_pitch->norm_input_dz(), 0, 1) * 100.0f; // Positive (nose up) only
     }
+#if AP_TECS_PARAGLIDER_ENABLED
+    const bool automatic_flare = control_mode == &mode_auto &&
+        flight_stage == AP_FixedWing::FlightStage::LAND && landing.is_flaring() &&
+        arming.is_armed_and_safety_off() && is_positive(g2.pg_flare_pct.get()) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_right);
+    if (automatic_flare) {
+        const float target = MIN(constrain_float(g2.pg_flare_pct, 0, 100),
+                                 100 - constrain_float(g2.pg_flare_reserve, 0, 100));
+        pg_flare_pct = MIN(target, pg_flare_pct +
+            constrain_float(g2.pg_flare_rate, 1, 100) * scheduler.get_loop_period_s());
+        common_brake_pct = pg_flare_pct;
+    } else {
+        // Do not retain a flare command into a go-around or manual takeover.
+        pg_flare_pct = 0;
+    }
+#endif
     const float aileron_in_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron); // centidegrees, -4500 to 4500
     const float left_turn_demand_pct = -constrain_float(aileron_in_cd, -4500, 0) / 45.0f; // Map Left Roll (negative) to Left Brake pct (positive)
     const float right_turn_demand_pct = constrain_float(aileron_in_cd, 0, 4500) / 45.0f; // Map Right Roll to Right Brake pct
 
-    const float left_brake = constrain_float(left_turn_demand_pct + pilot_flare_pct, 0, 100); // Handle Saturation - enforce max with no priority.
-    const float right_brake = constrain_float(right_turn_demand_pct + pilot_flare_pct, 0, 100);
+    // Common brake is a floor; differential demand uses the remaining travel.
+    const float left_brake = constrain_float(left_turn_demand_pct + common_brake_pct, 0, 100);
+    const float right_brake = constrain_float(right_turn_demand_pct + common_brake_pct, 0, 100);
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_pg_brake_left, left_brake);
     SRV_Channels::set_output_scaled(SRV_Channel::k_pg_brake_right, right_brake);
+#if AP_TECS_PARAGLIDER_ENABLED && HAL_LOGGING_ENABLED
+    if (is_positive(g2.pg_flare_pct.get())) {
+        // @LoggerMessage: PGFL
+        // @Description: Paraglider automatic flare and allocated brake outputs
+        // @Field: TimeUS: Time since system startup
+        // @Field: Active: Automatic brake flare active
+        // @Field: Common: Automatic common brake demand in percent
+        // @Field: Left: Allocated left brake demand in percent
+        // @Field: Right: Allocated right brake demand in percent
+        AP::logger().WriteStreaming("PGFL", "TimeUS,Active,Common,Left,Right", "QBfff",
+                                   AP_HAL::micros64(), uint8_t(automatic_flare),
+                                   pg_flare_pct, left_brake, right_brake);
+    }
+#endif
 }
 
 /*
