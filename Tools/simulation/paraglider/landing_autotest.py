@@ -24,7 +24,7 @@ CASE = os.environ.get('PG_LANDING_CASE', 'nominal')
 if CASE not in ('nominal', 'weak', 'strong', 'crosswind', 'abort', 'takeover', 'disabled', 'timed', 'reserve'):
     raise ValueError('Unknown landing case: ' + CASE)
 CONFIG = json.loads(Path(os.environ['PG_LANDING_CONFIG']).read_text()) if os.environ.get('PG_LANDING_CONFIG') else {}
-os.environ['PG_GAINS'] = 'original'
+os.environ.setdefault('PG_GAINS', 'mission')
 os.environ['PG_SAMPLE_DIVISOR'] = '8'
 
 
