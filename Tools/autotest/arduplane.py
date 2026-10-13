@@ -159,6 +159,25 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException('Passive pitch oscillation did not decay')
         self.disarm_vehicle(force=True)
 
+    def ParagliderLanding(self):
+        """Use the existing landing flare trigger and ground/disarm handling"""
+        self.paraglider_takeoff(altitude=60)
+        self.set_parameters({
+            'PG_FLARE_PCT': 60, 'PG_FLARE_RATE': 30, 'PG_FLARE_RES': 20,
+            'LAND_FLARE_ALT': 3, 'LAND_FLARE_SEC': 0, 'LAND_DISARMDELAY': 5,
+        })
+        mission = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 500, 0, 0),
+        ])
+        self.check_mission_upload_download(mission)
+        self.change_mode('AUTO')
+        self.wait_statustext('Flare ', timeout=240)
+        # Native model uses channels 1/2 for brakes and 3 for throttle.
+        self.wait_servo_channel_value(3, 1000, timeout=10)
+        self.wait_disarmed(timeout=120)
+        self.reset_SITL_commandline()
+
     def ParagliderAutoMission(self):
         """Fly an extended AUTO route with altitude changes and opposing two-turn loiters"""
         self.paraglider_takeoff(altitude=60)
@@ -10631,6 +10650,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MainFlight,
             Test(self.ParagliderAutoMission, speedup=10),
             Test(self.ParagliderPitchJoint, speedup=10),
+            Test(self.ParagliderLanding, speedup=10),
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
