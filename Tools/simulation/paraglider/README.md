@@ -195,3 +195,70 @@ the rate). Disabled by default. Includes both bodies' full state, relative joint
 rotation/rate, actual brake position, throttle, RPM, voltage and release status.
 No sensor/control behavior changes. The Three.js viewer, bridge, schema and replay
 converter live in the ArduPilot-tinkering repository under viewer/.
+
+## Experimental native landing brake response (13 October 2026)
+
+Automatic brake flare is **disabled by default**. This implementation uses the
+existing AP_Landing slope-landing state: LAND_FLARE_ALT, LAND_FLARE_SEC, existing
+landing height/rangefinder handling, throttle suppression, go-around, and disarm.
+It adds no independent AGL estimator or flare trigger.
+
+The normal throttle-only controller flies the approach. On an armed AUTO landing
+flare with both paraglider brake outputs assigned, the mixer ramps a common brake
+floor onto both channels. Differential steering uses the remaining travel, and
+the heading-rate controller includes that reduced travel in its anti-windup limit.
+TECS stops accumulating throttle correction while landing suppresses thrust.
+Abort, mode exit, safety engagement, or disarm clears the automatic common command.
+Manual pitch-stick flare remains unchanged. Brake release on takeover is immediate
+at the command level; the actuator still has its physical rate limit.
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| PG_FLARE_PCT | 0 | Requested common brake percent; zero disables |
+| PG_FLARE_RATE | 30 | Application rate in percentage points per second |
+| PG_FLARE_RES | 20 | Travel reserved above common brake for differential steering |
+
+Common brake is capped at 100 minus the reserve. Percent is normalized servo travel,
+not calibrated equal millimetres on both lines: the logged left/right strokes differ.
+Reserved travel also does not establish aerodynamic steering authority near stall.
+These are experimental controls, not flight-qualified flare settings.
+
+PGFL logs activation, common demand and allocated left/right brake percentages.
+Existing LAND, TECS, PGYR and RCOU messages retain the landing/controller context.
+Existing throttle slew limiting still applies when landing commands idle.
+
+### Reproduce the studies
+
+With the SITL Plane binary built and the simulator Python dependencies available:
+
+    BUILDLOGS=/tmp/pg-landing-nominal PG_LANDING_CASE=nominal python Tools/simulation/paraglider/landing_autotest.py --no-check-parameter-leaks test.Plane.ParagliderLandingStudy
+    BUILDLOGS=/tmp/pg-landing-native python Tools/autotest/autotest.py --no-check-parameter-leaks test.Plane.ParagliderLanding
+    python Tools/simulation/paraglider/landing_report.py /tmp/pg-landing-nominal /tmp/pg-landing-weak /tmp/pg-landing-strong /tmp/pg-landing-crosswind /tmp/pg-landing-abort /tmp/pg-landing-takeover /tmp/pg-landing-disabled /tmp/pg-landing-timed /tmp/pg-landing-reserve --output /tmp/pg-landing-report
+
+Run each case sequentially: the harness uses the standard SITL ports.
+Weak/strong multiply CLbrake and CDbrake by 0.5/1.5; these are sensitivity assumptions,
+not flight-derived flare fits. Crosswind applies 1.5 m/s lateral wind.
+The ordinary test uses a 3 m altitude trigger and a 60 percent target at 30 percent/s.
+Timed uses LAND_FLARE_SEC=3 and LAND_FLARE_ALT=0. Reserve requests 100 percent with
+20 percent reserved and an 8 m trigger so the 80 percent cap is actually reached.
+Abort sends the existing go-around command below 20 m; takeover enters MANUAL below
+2 m with centered sticks and idle throttle. Disabled retains ordinary landing with
+no common brake. The script writes telemetry, truth traces and first-contact metrics.
+
+The two-body study ends at the first payload-CG crossing of a flat ground plane.
+It has no contact, inflation, collapse, or validated high-brake stall model.
+The separate native SITL test checks flare, throttle cutoff, ground handling and
+automatic disarm; it does not establish landing quality of the two-body model.
+
+Initial results: common brake reduced nominal contact sink speed from 1.63 to
+1.41 m/s and ground speed from 3.96 to 3.06 m/s. Weak/strong cases contacted at
+1.41/1.46 m/s down; crosswind at 1.47 m/s. The earlier 80 percent case contacted
+at 1.54 m/s, so more/earlier brake was not automatically better. These are
+first-contact model outputs, not predictions of a safe real landing.
+The pre-flare go-around regained 31.3 m after the command below 20 m.
+Log checks cover activation, bounds, ramp rate, reserve cap, takeover reset,
+and idle throttle after the existing slew ramp.
+
+Next work should compare flare timing and pull schedules, examine transient
+sink increase after thrust removal, and measure common-brake lift/drag, stall
+margin and retained steering aloft before selecting real-aircraft settings.
