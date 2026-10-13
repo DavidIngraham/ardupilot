@@ -202,7 +202,11 @@ float Plane::stabilize_roll_get_roll_out()
         const float measured_dps = degrees((gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll()) / ahrs.cos_pitch());
         // Reset the inactive controller, including its input shaping and tick tracking.
         rollController.reset();
-        return g2.pg_turn.update(target_dps, measured_dps, degrees(gyro.x), true_airspeed, scheduler.get_loop_period_s());
+        // The previous mixer update supplies the available differential travel.
+        // Include flare allocation in anti-windup instead of clipping only at the servos.
+        const float brake_limit = 1.0f - pg_flare_pct * 0.01f;
+        return g2.pg_turn.update(target_dps, measured_dps, degrees(gyro.x), true_airspeed,
+                                scheduler.get_loop_period_s(), brake_limit);
     }
     g2.pg_turn.reset();
 #endif

@@ -1302,6 +1302,31 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: PG_TURN_
     // @Path: PG_TurnController.cpp
     AP_SUBGROUPINFO(pg_turn, "PG_TURN_", 42, ParametersG2, PG_TurnController),
+
+    // @Param: PG_FLARE_PCT
+    // @DisplayName: Paraglider automatic flare brake
+    // @Description: Symmetric brake demand during the existing automatic landing flare. Zero disables automatic brake flare. Requires both paraglider brake outputs. Limited by PG_FLARE_RES. Experimental; determine suitable travel in flight tests.
+    // @Range: 0 100
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_PCT", 43, ParametersG2, pg_flare_pct, 0),
+
+    // @Param: PG_FLARE_RATE
+    // @DisplayName: Paraglider flare brake application rate
+    // @Description: Maximum increase of symmetric brake demand per second after AP_Landing enters flare. Brake demand resets immediately on abort, mode exit or disarm.
+    // @Range: 1 100
+    // @Units: %/s
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_RATE", 44, ParametersG2, pg_flare_rate, 30),
+
+    // @Param: PG_FLARE_RES
+    // @DisplayName: Paraglider flare steering reserve
+    // @Description: Brake travel reserved above the common flare demand for differential steering. This reserves actuator travel, not guaranteed aerodynamic steering authority. Manual brake mixing is unchanged.
+    // @Range: 0 100
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_RES", 45, ParametersG2, pg_flare_reserve, 20),
+
 #endif
 
     AP_GROUPEND
