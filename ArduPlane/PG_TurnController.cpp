@@ -116,7 +116,7 @@ void PG_TurnController::reset()
     _initialised = false;
 }
 
-float PG_TurnController::update(float target_dps, float measured_dps, float roll_rate_dps, float airspeed, float dt)
+float PG_TurnController::update(float target_dps, float measured_dps, float roll_rate_dps, float airspeed, float dt, float brake_limit)
 {
     if (!isfinite(target_dps) || !isfinite(measured_dps) || !isfinite(roll_rate_dps) || !isfinite(airspeed) ||
         !is_positive(dt) || dt > 0.1f) {
@@ -161,11 +161,12 @@ float PG_TurnController::update(float target_dps, float measured_dps, float roll
     const float increment = MAX(_i.get(), 0.0f) * error * dt;
     const float candidate_i = constrain_float(_integrator + increment, -imax, imax);
     const float candidate_output = ff + dff + p + rdamp + candidate_i;
-    if ((candidate_output <= 1.0f || !is_positive(increment)) &&
-        (candidate_output >= -1.0f || !is_negative(increment))) {
+    brake_limit = constrain_float(brake_limit, 0.0f, 1.0f);
+    if ((candidate_output <= brake_limit || !is_positive(increment)) &&
+        (candidate_output >= -brake_limit || !is_negative(increment))) {
         _integrator = candidate_i;
     }
-    const float output = constrain_float(ff + dff + p + rdamp + _integrator, -1.0f, 1.0f);
+    const float output = constrain_float(ff + dff + p + rdamp + _integrator, -brake_limit, brake_limit);
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: PGYR
     // @Description: Paraglider heading-rate controller and roll-rate damping

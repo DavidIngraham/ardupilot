@@ -485,6 +485,9 @@ public:
 
 #if AP_TECS_PARAGLIDER_ENABLED
     PG_TurnController pg_turn;
+    AP_Float pg_flare_pct;
+    AP_Float pg_flare_rate;
+    AP_Float pg_flare_reserve;
 #endif
 
     // just to make compilation easier when all things are compiled out...
