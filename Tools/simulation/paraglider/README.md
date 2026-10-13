@@ -262,3 +262,46 @@ and idle throttle after the existing slew ramp.
 Next work should compare flare timing and pull schedules, examine transient
 sink increase after thrust removal, and measure common-brake lift/drag, stall
 margin and retained steering aloft before selecting real-aircraft settings.
+
+### Exploratory spot-landing Monte Carlo
+
+The Monte Carlo runs the same native AUTO landing with the moderate flare held
+fixed (60 percent common brake, 30 percent/s, 20 percent reserve, 3 m trigger).
+It samples wind/gusts, approach position/heading/speed, voltage, independent brake
+lift/drag multipliers, actuator response, and landing-datum error. The default
+seed is 20261013: 24 moderate-flare trials and eight matched no-flare controls.
+
+    python Tools/simulation/paraglider/landing_monte_carlo.py --output /path/to/research/logs --count 24 --pairs 8 --seed 20261013
+    python Tools/simulation/paraglider/landing_monte_carlo_report.py /path/to/research/logs
+
+Use the same Python environment and SITL build as the preceding landing study.
+Run sequentially; each trial starts a fresh SITL process. The runner resumes
+completed records in the selected directory and rejects a conflicting trial
+manifest. Use a new directory when changing code or sampling assumptions.
+The manifest and per-trial configurations preserve the exact draws. Failed or
+incomplete trials remain visible; the report does not silently exclude them
+from the attempted-trial denominator.
+
+The harness records the uploaded landing coordinates and intended ground-plane
+target, then interpolates first payload-CG ground crossing within the integration
+frame. Along-track error is positive beyond the target and negative short;
+cross-track error is east of the northbound approach. The report includes radial
+error, 5/10/20 m counts, sink/ground speed, and paired changes relative to no flare.
+The report's distributions are explicit engineering assumptions, not measured
+environmental probabilities. No flight-controller code or tuning changes are
+made by this experiment. Sparse samples cannot establish rare-event reliability.
+
+For seed 20261013, all 24 moderate-flare trials reached the ground plane:
+0/24 were within 5 m, 1/24 within 10 m, and 24/24 within 20 m.
+Median radial miss was 15.27 m (90th percentile 17.05 m), with a mean
+14.68 m short bias and 0.56 m 90th-percentile absolute cross-track error.
+Median contact sink was 1.47 m/s. All eight no-flare controls also completed.
+Matched mean changes with moderate flare were +0.26 m radial error,
+-0.04 m/s sink speed and -0.79 m/s ground speed. The strongest observed
+benefit was slower forward arrival, not a tighter landing footprint.
+
+The tested LAND_FLARE_AIM=50 and TECS_LAND_SINK=0.25 remain unmodified.
+The existing approach calculation uses them to estimate flare distance.
+An overly long estimated flare duration is a plausible source of the short
+bias; test that mechanism with matched settings comparisons and new held-out
+draws rather than treating a post-hoc shift of these landing points as validation.
