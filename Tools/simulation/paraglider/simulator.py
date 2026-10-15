@@ -43,7 +43,9 @@ class Simulator:
  def controls(self,throttle,left_mm,right_mm):
   a=np.array([throttle,left_mm,right_mm],float)
   if not np.isfinite(a).all() or not 0<=throttle<=1 or not 0<=left_mm<=62.4 or not 0<=right_mm<=72.01:raise ValueError('command outside logged actuator ranges')
-  return np.array([throttle,max(left_mm/1000-self.parameters['left_offset'],0),max(right_mm/1000-self.parameters['right_offset'],0)])
+  pull=np.array([left_mm/1000-self.parameters['left_offset'],right_mm/1000-self.parameters['right_offset']])
+  if not self.parameters['routing_enabled']:pull=np.maximum(pull,0.)
+  return np.r_[throttle,pull]
  def from_pwm(self,throttle_pwm,left_pwm,right_pwm):
   mm_per_us=np.pi*55/360*.1
   command=np.array([(throttle_pwm-1000)/1000,(left_pwm-800)*mm_per_us,(2400-right_pwm)*mm_per_us])

@@ -100,7 +100,7 @@ class Backend:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--flight', choices=['hood_river', 'trout_lake'], default='trout_lake')
-    parser.add_argument('--profile', choices=['mission', 'dynamic_roll'], default='mission')
+    parser.add_argument('--profile', choices=['mission', 'dynamic_roll', 'routed_research', 'wide_research'], default='mission')
     parser.add_argument('--port', type=int, default=9002)
     parser.add_argument('--altitude', type=float, default=100.)
     parser.add_argument('--voltage', type=float, default=22.2)
