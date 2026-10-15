@@ -13,6 +13,12 @@ KEYS+=['brake_tilt_rad_per_m'];DEFAULT['brake_tilt_rad_per_m']=0.
 KEYS+=['rotor_spin_inertia','rotor_spin_sign'];DEFAULT.update(rotor_spin_inertia=0.,rotor_spin_sign=0.)
 KEYS+=['geometry_yaw','yaw_payload_halfspacing','yaw_canopy_halfspacing','yaw_vertical_separation'];DEFAULT.update(geometry_yaw=0.,yaw_payload_halfspacing=.0743,yaw_canopy_halfspacing=.5,yaw_vertical_separation=.85)
 KEYS+=['spin_acceleration_scale'];DEFAULT['spin_acceleration_scale']=0.
+# Routing dimensions in metres; disabled preserves the legacy command path exactly.
+KEYS += ['routing_enabled','riser_halfspacing','guide_halfspacing','guide_x','ring_height',
+         'support_halfspacing','support_height','cascade_x','route_reference_left','route_reference_right']
+DEFAULT.update(routing_enabled=0.,riser_halfspacing=.066,guide_halfspacing=.0455,guide_x=-.0225,
+               ring_height=.060,support_halfspacing=.3235535694,support_height=.85,cascade_x=-.1,
+               route_reference_left=0.,route_reference_right=0.)
 lib=ctypes.CDLL(str(Path(__file__).with_name('libdynamics.so')));ptr=np.ctypeslib.ndpointer(dtype=np.float64,flags='C_CONTIGUOUS');lib.derivative.argtypes=[ptr,ptr,ptr,ctypes.c_double,ptr,ptr];lib.replay.argtypes=[ptr,ptr,ctypes.c_int,ctypes.c_double,ctypes.c_int,ptr,ctypes.c_double,ptr,ptr];lib.replay.restype=ctypes.c_int
 
 def params(p=None):
@@ -45,3 +51,9 @@ def rotor_loads(omega_world,rotation,inertia,signed_rpm,signed_rpm_rate=0.):
  return out
 
 lib.mapped_torque.argtypes=[ctypes.c_double,ctypes.c_double];lib.mapped_torque.restype=ctypes.c_double
+
+lib.brake_paths.argtypes=[ptr,ptr,ptr]
+def brake_paths(y,p):
+ out=np.zeros(2)
+ lib.brake_paths(np.ascontiguousarray(y,dtype=float),params(p),out)
+ return out

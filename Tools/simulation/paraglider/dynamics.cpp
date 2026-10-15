@@ -24,7 +24,33 @@ V rotor_moment(V omega_world,M Rp,double inertia,double signed_rpm,double signed
 extern "C" void rotor_loads(const double*omega,const double*rotation,double inertia,double rpm,double rpm_rate,double*out){
  Eigen::Map<V> result(out); result=rotor_moment(Eigen::Map<const V>(omega),Eigen::Map<const M>(rotation),inertia,rpm,rpm_rate);
 }
+// Routed inextensible brake line. Anchors are relative to the common joint.
+// The ring follows the straight riser towards its canopy support point.
+// Constant servo-to-guide length is absorbed into the measured neutral trim.
+double brake_path(const M& Rp, const M& Rc, const double* p, double side)
+{
+    V anchor = Rp * V(0, side*p[61], 0);
+    V guide = Rp * V(p[63], side*p[62], 0);
+    V support = Rc * V(0, side*p[65], -p[66]);
+    V ring = anchor + p[64]*(support-anchor).normalized();
+    V cascade = support + Rc*V(p[67], 0, 0);
+    return (guide-ring).norm() + (ring-cascade).norm();
+}
+extern "C" void brake_paths(const double* y, const double* p, double* out)
+{
+    State state = Eigen::Map<const State>(y);
+    out[0] = brake_path(rot(state,0), rot(state,13), p, -1);
+    out[1] = brake_path(rot(state,0), rot(state,13), p, 1);
+}
 State rhs(const State& y,const double *u,const double *p,double mass,V wind,double rotor_rpm=0,double rotor_rpm_rate=0,double shaft_torque=NAN){
+ double routed_u[3] = {u[0], u[1], u[2]};
+ if (p[60] > 0) {
+     for (int i=0; i<2; i++) {
+         const double delta = brake_path(rot(y,0),rot(y,13),p,i==0?-1:1)-p[68+i];
+         routed_u[i+1] = std::max(0., u[i+1]+delta);
+     }
+     u = routed_u;
+ }
  double rho=p[0],S=p[1],b=p[2],c=p[3],mp=mass-p[51],mc=p[51];
  M Rp=rot(y,0),Rc=rot(y,13);V rp=Rp*V(p[39],p[40],p[41]),rc=Rc*V(0,0,.85),vp=y.segment<3>(7),vc=y.segment<3>(20),wp=y.segment<3>(10),wc=y.segment<3>(23);
  M Ib;Ib<<p[42],p[45],p[46],p[45],p[43],p[47],p[46],p[47],p[44]; M Ip=Rp*Ib*Rp.transpose(),Ic=Rc*V(.075,.008,.077).asDiagonal()*Rc.transpose();M Ipi=Ip.inverse(),Ici=Ic.inverse();
