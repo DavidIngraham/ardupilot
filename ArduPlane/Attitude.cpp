@@ -172,6 +172,43 @@ float Plane::stabilize_roll_get_roll_out()
     }
 #endif
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (g2.pg_turn.enabled() &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_right) &&
+        arming.is_armed_and_safety_off() && !ground_mode &&
+        fabsf(ahrs.get_roll_rad()) < radians(75) && fabsf(ahrs.get_pitch_rad()) < radians(60)) {
+        float true_airspeed;
+        if (!ahrs.airspeed_TAS(true_airspeed)) {
+            true_airspeed = aparm.airspeed_cruise * ahrs.get_EAS2TAS();
+        }
+        true_airspeed = MAX(true_airspeed, 2.0f);
+        // Bank is only a guidance-command encoding here, never feedback.
+        // Retain the bank/load-factor limits and any pilot stick mixing.
+        float projection = 1.0f;
+        if (control_mode->does_auto_navigation()) {
+            const Vector2f velocity = ahrs.groundspeed_vector();
+            const float speed = velocity.length();
+            if (speed > 1.0f) {
+                projection = (velocity.x * ahrs.cos_yaw() + velocity.y * ahrs.sin_yaw()) / speed;
+            }
+        }
+        const float target_dps = PG_TurnController::heading_rate_target(cd_to_rad(nav_roll_cd), ahrs.cos_pitch(), true_airspeed, projection);
+        pg_heading_rate_target_dps = target_dps;
+        pg_heading_rate_valid = true;
+        const Vector3f &gyro = ahrs.get_gyro();
+        const float measured_dps = degrees((gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll()) / ahrs.cos_pitch());
+        // Reset the inactive controller, including its input shaping and tick tracking.
+        rollController.reset();
+        // The previous mixer update supplies the available differential travel.
+        // Include flare allocation in anti-windup instead of clipping only at the servos.
+        const float brake_limit = 1.0f - pg_common_brake_pct * 0.01f;
+        return g2.pg_turn.update(target_dps, measured_dps, degrees(gyro.x), true_airspeed,
+                                scheduler.get_loop_period_s(), brake_limit);
+    }
+    g2.pg_turn.reset();
+#endif
+
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
@@ -423,6 +460,9 @@ void Plane::stabilize_yaw()
  */
 void Plane::stabilize()
 {
+#if AP_TECS_PARAGLIDER_ENABLED
+    pg_heading_rate_valid = false;
+#endif
     uint32_t now = AP_HAL::millis();
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {

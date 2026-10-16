@@ -485,6 +485,11 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
         }
     }
     plane.reset_offset_altitude();
+    if (plane.control_mode == &plane.mode_cruise || plane.control_mode == &plane.mode_fbwb) {
+        // These modes hold a separate altitude demand, rather than following
+        // next_WP_loc's altitude. Apply the GCS request to that demand as well.
+        plane.set_target_altitude_location(location);
+    }
 }
 
 

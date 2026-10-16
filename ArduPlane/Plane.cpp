@@ -1115,12 +1115,27 @@ void Plane::run_custom_controller()
     custom_control.ground_mode = ground_mode;
     custom_control.flight_mode = get_mode();
     custom_control.flight_stage = (uint8_t)flight_stage;
+    custom_control.heading_rate_valid = false;
+    custom_control.heading_rate_target_dps = 0;
+    custom_control.brake_common_pct = 0;
+#if AP_TECS_PARAGLIDER_ENABLED
+    custom_control.heading_rate_valid = pg_heading_rate_valid;
+    custom_control.heading_rate_target_dps = pg_heading_rate_target_dps;
+    custom_control.brake_common_pct = pg_common_brake_pct;
+#endif
 
     // Run the controller.
     if (custom_control.update()) {
         // Reset stock controllers as needed.
         if (custom_control.needs_reset_roll()) {
             rollController.reset_I();
+#if AP_TECS_PARAGLIDER_ENABLED
+            if (custom_control.is_running() && pg_heading_rate_valid) {
+                // Stock control ran first. Seed its next update from the actual
+                // overriding demand, including on the first loop back to stock.
+                g2.pg_turn.reset(SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+            }
+#endif
         }
         if (custom_control.needs_reset_pitch()) {
             pitchController.reset_I();

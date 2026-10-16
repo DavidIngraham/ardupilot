@@ -1203,6 +1203,14 @@ private:
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::Function func2_in,
                                 SRV_Channel::Function func1_out, SRV_Channel::Function func2_out) const;
+    void paraglider_brake_mixer(void);
+#if AP_TECS_PARAGLIDER_ENABLED
+    float pg_flare_pct = 0;
+    float pg_common_brake_pct = 0;
+    float pg_custom_common_pct = 0;
+    float pg_heading_rate_target_dps = 0;
+    bool pg_heading_rate_valid = false;
+#endif
     void flaperon_update();
     void indicate_waiting_for_rud_neutral_to_takeoff(void);
 
