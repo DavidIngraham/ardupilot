@@ -4,6 +4,8 @@ Fly ArduPlane in SITL
 AP_FLAKE8_CLEAN
 '''
 
+import csv
+import json
 import math
 import operator
 import os
@@ -105,6 +107,303 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             return self.takeoff_in_QHOVER(alt=alt, relative=relative, timeout=timeout)
 
         return self.takeoff_in_FBWA(alt=alt, alt_max=alt_max, relative=relative, timeout=timeout)
+
+    def paraglider_takeoff(self, altitude=60, model='paraglider-throw', pitch_damper=None, extra_parameters=None):
+        '''Start the paraglider model and launch with the simulated throw assist'''
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath('paraglider'),
+            wipe=True,
+        )
+        self.set_rc_default()
+        self.assert_parameter_values({
+            'TECS_PG_ENABLE': 1,
+            'SERVO1_FUNCTION': 190,
+            'SERVO2_FUNCTION': 191,
+        })
+        parameters = {'TKOFF_ALT': altitude, 'SERVO7_FUNCTION': 0}
+        if pitch_damper is not None:
+            parameters['TECS_PTCH_DAMP'] = pitch_damper
+        self.set_parameters(parameters)
+        if extra_parameters:
+            self.set_parameters(extra_parameters)
+            self.reboot_sitl()
+            self.set_rc_default()
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.set_servo(7, 2000)
+        self.wait_altitude(altitude - 5, altitude + 10, relative=True, timeout=120)
+        self.set_servo(7, 1000)
+
+    def ParagliderCustomControl(self):
+        """Return from a custom aileron override to the primary heading controller"""
+        self.paraglider_takeoff(extra_parameters={'CP_TYPE': 2, 'CP_MASK': 1, 'RC6_OPTION': 109})
+        self.set_rc(6, 1000)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.delay_sim_time(10, reason='settle primary heading control')
+        for _ in range(3):
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.set_rc(6, 2000)
+            self.wait_statustext('Custom controller is ON', check_context=True)
+            self.delay_sim_time(0.5, reason='brief custom roll override')
+            self.set_rc(6, 1000)
+            self.wait_statustext('Custom controller is OFF', check_context=True)
+            self.context_pop()
+            self.wait_altitude(30, 90, relative=True, minimum_duration=5, timeout=15)
+        self.change_mode('MANUAL')
+        self.set_rc(6, 2000)
+        self.delay_sim_time(1, reason='custom controller remains suspended in manual')
+        self.set_rc(6, 1000)
+        self.change_mode('FBWB')
+        self.wait_altitude(30, 90, relative=True, minimum_duration=5, timeout=15)
+        self.disarm_vehicle(force=True)
+
+    def ParagliderPitchJoint(self):
+        """Fly the articulated model with the throttle pitch damper disabled"""
+        self.paraglider_takeoff(120, model='paraglider-throw:paraglider-pitch-joint.json', pitch_damper=0)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.delay_sim_time(30, reason='settle the passive pitch joint')
+        start = self.get_sim_time()
+        pitch_min = float('inf')
+        pitch_max = -float('inf')
+        while self.get_sim_time_cached() - start < 30:
+            attitude = self.assert_receive_message('ATTITUDE')
+            if not math.isfinite(attitude.pitch) or not math.isfinite(attitude.pitchspeed):
+                raise NotAchievedException('Non-finite articulated paraglider attitude')
+            pitch = math.degrees(attitude.pitch)
+            pitch_min = min(pitch_min, pitch)
+            pitch_max = max(pitch_max, pitch)
+            if abs(pitch) > 35 or abs(math.degrees(attitude.pitchspeed)) > 10:
+                raise NotAchievedException('Passive paraglider pitch joint did not settle')
+            position = self.assert_receive_message('GLOBAL_POSITION_INT')
+            if not 80 < position.relative_alt * 0.001 < 150:
+                raise NotAchievedException('Articulated paraglider did not maintain flight')
+        if pitch_max - pitch_min > 5:
+            raise NotAchievedException('Passive pitch oscillation did not decay')
+        self.disarm_vehicle(force=True)
+
+    def ParagliderLanding(self):
+        """Use the existing landing flare trigger and ground/disarm handling"""
+        self.paraglider_takeoff(altitude=60)
+        self.set_parameters({
+            'PG_FLARE_PCT': 60, 'PG_FLARE_RATE': 30, 'PG_FLARE_RES': 20,
+            'LAND_FLARE_ALT': 3, 'LAND_FLARE_SEC': 0, 'LAND_DISARMDELAY': 5,
+        })
+        mission = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 500, 0, 0),
+        ])
+        self.check_mission_upload_download(mission)
+        self.change_mode('AUTO')
+        self.wait_statustext('Flare ', timeout=240)
+        # Native model uses channels 1/2 for brakes and 3 for throttle.
+        self.wait_servo_channel_value(3, 1000, timeout=10)
+        self.wait_disarmed(timeout=120)
+        self.reset_SITL_commandline()
+
+    def ParagliderAutoMission(self):
+        """Fly an extended AUTO route with altitude changes and opposing two-turn loiters"""
+        self.paraglider_takeoff(altitude=60)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.wait_altitude(45, 75, relative=True, minimum_duration=15, timeout=60)
+        waypoint_radius = self.get_parameter('WP_RADIUS')
+        loiter_radius = abs(self.get_parameter('WP_LOITER_RAD'))
+        self.set_parameters({'WP_RADIUS': waypoint_radius, 'WP_MAX_RADIUS': 0, 'WP_LOITER_RAD': loiter_radius,
+                             'SIM_WIND_SPD': 0, 'SIM_WIND_TURB': 0})
+        navigation_parameters = self.get_parameters(['NAVL1_DAMPING', 'NAVL1_PERIOD'])
+        turn_keys = ('ENABLE', 'FF', 'P', 'I', 'IMAX', 'RMAX', 'ACCEL', 'FILT', 'TC', 'ASPD', 'RDAMP', 'D_FF')
+        turn_parameters = self.get_parameters(['PG_TURN_' + name for name in turn_keys])
+        waypoint = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        turns = mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS
+        unlimited = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
+        route = [
+            (waypoint, 250, 0, 60),
+            (waypoint, 650, 0, 90),
+            (turns, 650, 400, 90),
+            (waypoint, 250, 400, 60),
+            (waypoint, 250, 0, 45),
+            (waypoint, -150, 0, 45),
+            (waypoint, -150, -400, 75),
+            (turns, 250, -400, 75),
+            (waypoint, 650, -400, 55),
+            (waypoint, 650, 0, 55),
+            (waypoint, 250, 0, 60),
+            # Nonzero offsets avoid the current-position interpretation.
+            (unlimited, 1, 1, 60),
+        ]
+        mission = self.create_simple_relhome_mission(route)
+        # Scale the tested 90-degree acceptance distance by corner angle.
+        # Explicit acceptance avoids the L1 lookahead cap on WP_RADIUS.
+        # Straight-through items keep zero.
+        acceptance_radii = {}
+        for seq, item in enumerate(mission[1:], 1):
+            if item.command != waypoint:
+                continue
+            previous = route[seq - 2][1:3] if seq > 1 else (0, 0)
+            corner = route[seq - 1][1:3]
+            following = route[seq][1:3]
+            incoming = (corner[0] - previous[0], corner[1] - previous[1])
+            outgoing = (following[0] - corner[0], following[1] - corner[1])
+            angle = math.atan2(abs(incoming[0]*outgoing[1] - incoming[1]*outgoing[0]),
+                               incoming[0]*outgoing[0] + incoming[1]*outgoing[1])
+            if angle >= math.radians(1):
+                lead = waypoint_radius * math.tan(angle / 2)
+                # Preserve enough leg length for successive corner transitions.
+                if lead >= 0.5 * min(math.hypot(*incoming), math.hypot(*outgoing)):
+                    raise NotAchievedException('Mission corner too tight for achievable turn rate')
+                item.param2 = math.ceil(lead)
+            acceptance_radii[seq] = item.param2
+        for seq, radius in ((3, loiter_radius), (8, -loiter_radius)):
+            mission[seq].param1 = 2
+            mission[seq].param3 = radius
+        mission[-1].param3 = loiter_radius
+        self.check_mission_upload_download(mission)
+        home = self.home_position_as_location()
+        targets = {seq: self.offset_location_ne(home, north, east)
+                   for seq, (_, north, east, _) in enumerate(route, 1)}
+        metrics = {seq: {'closest_distance_m': None, 'altitude_at_closest_m': None,
+                         'circle_angle_rad': 0.0, 'last_circle_angle_rad': None,
+                         'next_track_overshoot_m': None}
+                   for seq in targets}
+        rows = []
+        servo_functions = self.get_parameters([f"SERVO{i}_FUNCTION" for i in range(1, 17)])
+        channels = {function: next(i for i in range(1, 17)
+                                  if servo_functions[f"SERVO{i}_FUNCTION"] == function)
+                    for function in (190, 191, 70)}
+
+        def observe(mav, message):
+            if message.get_type() == 'ATTITUDE':
+                if not all(math.isfinite(value) for value in (
+                        message.roll, message.pitch, message.yaw,
+                        message.rollspeed, message.pitchspeed, message.yawspeed)):
+                    raise NotAchievedException('Non-finite extended mission attitude')
+            if message.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            altitude = message.relative_alt * 0.001
+            if not 20 <= altitude <= 130:
+                raise NotAchievedException('Extended mission exceeded altitude bounds')
+            current = mav.messages.get('MISSION_CURRENT')
+            attitude = mav.messages.get('ATTITUDE')
+            servos = mav.messages.get('SERVO_OUTPUT_RAW')
+            navigation = mav.messages.get('NAV_CONTROLLER_OUTPUT')
+            if current is None or attitude is None or servos is None or navigation is None:
+                return
+            seq = current.seq
+            if seq not in targets:
+                return
+            here = Location(message.lat * 1.0e-7, message.lon * 1.0e-7,
+                            message.alt * 0.001, AltFrame.ABSOLUTE)
+            distance = self.get_distance(targets[seq], here)
+            metric = metrics[seq]
+            if metric['closest_distance_m'] is None or distance < metric['closest_distance_m']:
+                metric['closest_distance_m'] = distance
+                metric['altitude_at_closest_m'] = altitude
+            # Measure crossing beyond the outgoing track during each clean
+            # 90-degree corner, including the following leg's turn transient.
+            corner = seq - 1
+            if corner in (4, 5, 6, 9, 10):
+                _, an, ae, _ = route[corner - 2]
+                _, bn, be, _ = route[corner - 1]
+                _, cn, ce, _ = route[corner]
+                north = math.radians(here.lat - home.lat) * 6371000
+                east = math.radians(here.lng - home.lng) * 6371000 * math.cos(math.radians(home.lat))
+                dn, de = bn - an, be - ae
+                on, oe = cn - bn, ce - be
+                along_out = ((north - bn) * on + (east - be) * oe) / math.hypot(on, oe)
+                if -150 <= along_out <= 150:
+                    overrun = ((north - bn) * dn + (east - be) * de) / math.hypot(dn, de)
+                    previous = metrics[corner]['next_track_overshoot_m']
+                    metrics[corner]['next_track_overshoot_m'] = max(previous or 0, overrun)
+            if seq in (3, 8):
+                # Exclude the approach: count angular travel only near the orbit.
+                if 0.5 * loiter_radius <= distance <= (5.0 / 3.0) * loiter_radius:
+                    angle = math.radians(self.get_bearing(targets[seq], here))
+                    previous = metric['last_circle_angle_rad']
+                    if previous is not None:
+                        metric['circle_angle_rad'] += (angle - previous + math.pi) % (2 * math.pi) - math.pi
+                    metric['last_circle_angle_rad'] = angle
+                else:
+                    metric['last_circle_angle_rad'] = None
+            rows.append((seq, message.time_boot_ms * 0.001, here.lat, here.lng,
+                         altitude, distance, math.hypot(message.vx, message.vy) * 0.01,
+                         attitude.roll, attitude.pitch, attitude.yawspeed,
+                         *(getattr(servos, f"servo{channels[f]}_raw") for f in (190, 191, 70)),
+                         navigation.nav_roll, navigation.xtrack_error))
+
+        for message in ('GLOBAL_POSITION_INT', 'ATTITUDE', 'SERVO_OUTPUT_RAW',
+                        'MISSION_CURRENT', 'NAV_CONTROLLER_OUTPUT'):
+            self.set_message_rate_hz(message, 10)
+        filename = self.buildlogs_path('ParagliderAutoMission.csv')
+        self.install_message_hook(observe)
+        try:
+            self.set_current_waypoint(1)
+            self.change_mode('AUTO')
+            speed = self.get_parameter('AIRSPEED_CRUISE')
+            for seq, (command, _, _, altitude) in enumerate(route[:-1], 1):
+                self.start_subtest('AUTO item %u at %u metres' % (seq, altitude))
+                self.wait_current_waypoint(seq, timeout=30)
+                timeout = 90 + self.distance_to_nav_target() / speed
+                if command == turns:
+                    timeout += 2 * 2 * math.pi * loiter_radius / speed + 120
+                self.wait_current_waypoint(seq + 1, timeout=timeout)
+                metric = metrics[seq]
+                if command == waypoint:
+                    # Record proximity without forcing a tight acquisition:
+                    # normal Plane navigation may advance across the finish line.
+                    if metric['closest_distance_m'] is None:
+                        raise NotAchievedException('No track samples for mission waypoint %u' % seq)
+                    if abs(metric['altitude_at_closest_m'] - altitude) > 12:
+                        raise NotAchievedException('Wrong altitude at extended mission waypoint %u' % seq)
+                else:
+                    direction = 1 if seq == 3 else -1
+                    if direction * metric['circle_angle_rad'] < 1.5 * 2 * math.pi:
+                        raise NotAchievedException('Insufficient correctly directed loiter turns at item %u' % seq)
+                self.assert_mode('AUTO')
+                self.assert_armed()
+            for corner in (4, 5, 6, 9, 10):
+                overrun = metrics[corner]['next_track_overshoot_m']
+                if overrun is None or overrun > 4:
+                    raise NotAchievedException('Excessive next-track overshoot at corner %u: %s' % (corner, overrun))
+            self.start_subtest('Sustained home loiter after extended mission')
+            self.wait_distance_to_home(0, 1.5 * loiter_radius, minimum_duration=30, timeout=180)
+            self.wait_altitude(48, 72, relative=True, minimum_duration=15, timeout=60)
+            self.assert_mode('AUTO')
+            self.assert_armed()
+            if turn_parameters['PG_TURN_ENABLE'] != 0:
+                self.start_subtest('Handover between heading-rate and legacy roll control')
+                for enabled in (0, 1):
+                    self.set_parameter('PG_TURN_ENABLE', enabled)
+                    self.delay_sim_time(5, reason='Observe controller handover in home loiter')
+                    self.assert_mode('AUTO')
+                    self.assert_armed()
+        finally:
+            self.remove_message_hook(observe)
+            with open(filename, 'w', newline='') as output:
+                writer = csv.writer(output)
+                writer.writerow(('seq', 'time_s', 'latitude_deg', 'longitude_deg',
+                                 'relative_alt_m', 'target_distance_m', 'groundspeed_mps',
+                                 'roll_rad', 'pitch_rad', 'yaw_rate_radps',
+                                 'left_brake_pwm', 'right_brake_pwm', 'throttle_pwm',
+                                 'nav_roll_deg', 'nav_cross_track_error_m'))
+                writer.writerows(rows)
+            with open(filename + '.json', 'w') as output:
+                json.dump(dict(route=route, metrics=metrics, home_lat=home.lat,
+                               home_lng=home.lng, waypoint_radius_m=waypoint_radius, waypoint_max_radius_m=0,
+                               waypoint_acceptance_radius_m=acceptance_radii,
+                               loiter_radius_m={3: loiter_radius, 8: -loiter_radius, 12: loiter_radius},
+                               navigation_parameters=navigation_parameters,
+                               turn_controller_parameters=turn_parameters,
+                               roll_gains=self.get_parameters(['RLL_RATE_FF', 'RLL_RATE_D_FF',
+                                                              'RLL2SRV_TCONST'])), output, indent=2)
+            self.progress('Extended paraglider mission track: %s' % filename)
+        self.reset_SITL_commandline()
 
     def takeoff_in_QHOVER(self, alt=20, relative=True, timeout=None):
         '''VTOL climb to altitude in QHOVER'''
@@ -10670,6 +10969,10 @@ return update()
             self.DO_CHANGE_SPEED,
             self.GuidedRequest,
             self.MainFlight,
+            Test(self.ParagliderAutoMission, speedup=10),
+            Test(self.ParagliderPitchJoint, speedup=10),
+            Test(self.ParagliderCustomControl, speedup=10),
+            Test(self.ParagliderLanding, speedup=10),
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
