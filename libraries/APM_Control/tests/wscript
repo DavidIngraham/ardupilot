@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+# AP_FLAKE8_CLEAN
+"""Build paraglider controller unit tests."""
+
+
+def build(bld):
+    """Register tests with the common ArduPilot test library."""
+    bld.ap_find_tests(use='ap')
