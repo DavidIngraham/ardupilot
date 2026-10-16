@@ -1,6 +1,0 @@
-__pycache__/
-*.so
-*.npz
-mission-demo.json
-verification.json
-!equilibrium-trim-*.npz
