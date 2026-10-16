@@ -21,6 +21,7 @@
 #if AP_SIM_JSON_ENABLED
 
 #include "SIM_JSON.h"
+#include "SIM_JSON_WASM.h"
 
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -70,6 +71,9 @@ JSON::JSON(const char *frame_str) :
     if (colon) {
         target_ip = colon+1;
     }
+#if HAL_SITL_WASM_ENABLED
+    wasm_transport = strcmp(target_ip, "wasm") == 0;
+#endif
 
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
     AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
@@ -88,6 +92,10 @@ JSON::JSON(const char *frame_str) :
 */
 void JSON::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
+    if (wasm_transport) {
+        printf("JSON control interface uses WebAssembly lockstep transport\n");
+        return;
+    }
     sock.set_blocking(false);
     sock.reuseaddress();
 
@@ -97,6 +105,26 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
     control_port = port_out;
 
     printf("JSON control interface set to %s:%u\n", target_ip, control_port);
+}
+
+ssize_t JSON::send_packet(const void *buffer, size_t length)
+{
+#if HAL_SITL_WASM_ENABLED
+    if (wasm_transport) {
+        return JSON_WASM::send_servos(buffer, length);
+    }
+#endif
+    return sock.sendto(buffer, length, target_ip, control_port);
+}
+
+ssize_t JSON::receive_packet(void *buffer, size_t capacity)
+{
+#if HAL_SITL_WASM_ENABLED
+    if (wasm_transport) {
+        return JSON_WASM::receive_sensors(buffer, capacity);
+    }
+#endif
+    return sock.recv(buffer, capacity, UDP_TIMEOUT_MS);
 }
 
 /*
@@ -114,7 +142,7 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+      send_ret = send_packet(&pkt, pkt_size);
     } else {
       servo_packet_16 pkt;
       pkt.frame_rate = rate_hz;
@@ -123,7 +151,7 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+      send_ret = send_packet(&pkt, pkt_size);
     }
 
     if ((size_t)send_ret != pkt_size) {
@@ -303,7 +331,7 @@ uint64_t JSON::parse_sensors(const char *json)
 void JSON::recv_fdm(const struct sitl_input &input)
 {
     // Receive sensor packet
-    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+    ssize_t ret = receive_packet(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
 
     if (state.no_lockstep && ret <= 0) {
@@ -320,7 +348,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
-        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+        ret = receive_packet(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len);
         wait_ms += UDP_TIMEOUT_MS;
         // if no sensor message is received after 10 second resend servos, this help cope with SITL and the physics getting out of sync
         if (wait_ms > 1000) {

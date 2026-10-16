@@ -62,6 +62,10 @@ private:
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
+    bool wasm_transport = false;
+    ssize_t send_packet(const void *buffer, size_t length);
+    ssize_t receive_packet(void *buffer, size_t capacity);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM_native sock;
 #else
