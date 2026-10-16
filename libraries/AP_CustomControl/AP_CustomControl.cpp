@@ -131,6 +131,7 @@ void AP_CustomControl::set_output_pwm_chan_override(uint8_t chan, uint16_t value
 // was overriding need their integrators cleared.
 bool AP_CustomControl::update(void)
 {
+    _common_brake_requested = false;
     // Engagement is governed by is_safe_to_run(), not by the aux switch alone: an RC
     // failsafe, a mode change or a CP_TYPE edit suspends and resumes us with no switch event.
     const bool safe_to_run = is_safe_to_run();
@@ -176,6 +177,23 @@ bool AP_CustomControl::update(void)
 
     return ret;
 
+}
+
+void AP_CustomControl::set_brake_common_pct(float value)
+{
+    if (isfinite(value)) {
+        _common_brake_pct = constrain_float(value, 0, 100);
+        _common_brake_requested = true;
+    }
+}
+
+bool AP_CustomControl::get_brake_common_pct(float &value) const
+{
+    if (!_is_running || !_common_brake_requested) {
+        return false;
+    }
+    value = _common_brake_pct;
+    return true;
 }
 
 // Clear the pending stock controller reset requests.

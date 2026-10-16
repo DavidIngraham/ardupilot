@@ -40,6 +40,16 @@ public:
     bool ground_mode; // Whether we are disarmed on the ground.
     uint8_t flight_mode; // The flight mode we are currently in.
     uint8_t flight_stage; // The flight stage we are currently in.
+    // Optional vehicle-provided heading reference, before controller shaping.
+    bool heading_rate_valid;
+    float heading_rate_target_dps;
+    // Previous allocated common brake, for output matching and authority limits.
+    float brake_common_pct;
+
+    bool is_running() const { return _is_running; }
+    // Request symmetric brake through the vehicle mixer, not raw servo overrides.
+    void set_brake_common_pct(float value);
+    bool get_brake_common_pct(float &value) const;
 
     // One-off object initialization.
     void init(void);
@@ -110,6 +120,8 @@ private:
     bool _is_running;               // True if the backend ran on the most recent update(). Drives engage/disengage edge detection and CP.Run.
     bool _max_allocations_warned;
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
+    bool _common_brake_requested;
+    float _common_brake_pct;
  
     void set_controls();
     void clear_reset_flags(void);
