@@ -75,6 +75,8 @@ void AP_TECS::_reset_paraglider(void)
     _pg_pitch_rate_lpf2.reset();
     _pg_pitch_rate_wash.reset();
     _pg_hgt_rate_ff = 0.0f;
+    _pg_tracking = false;
+    _pg_tracking_residual = 0;
     reset_throttle_I();
 }
 
@@ -223,7 +225,9 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
     const float integ_max = constrain_float((_THRmaxf - thr_ff_pd + 0.1f), -max_amp, max_amp);
     const float integ_min = constrain_float((_THRminf - thr_ff_pd - 0.1f), -max_amp, max_amp);
 
-    _integTHR_state += (v_err * _get_i_gain()) * _DT * vertical_speed_gain;
+    if (!_pg_tracking) {
+        _integTHR_state += (v_err * _get_i_gain()) * _DT * vertical_speed_gain;
+    }
     _integTHR_state = constrain_float(_integTHR_state, integ_min, integ_max);
 
     float pitch_damp = _ptchDamp;
@@ -235,13 +239,29 @@ void AP_TECS::_update_paraglider(uint64_t now, float pitch_trim_deg, float hgt_a
     float pr_damp = -pitch_damp * pitch_rate;
     pr_damp = constrain_float(pr_damp, -0.25f, 0.25f);
 
-    _throttle_dem = thr_ff_pd + _integTHR_state + pr_damp;
+    if (_pg_tracking) {
+        const float target = constrain_float(_pg_tracking_throttle, _THRminf, _THRmaxf);
+        _integTHR_state = constrain_float(target-thr_ff_pd-pr_damp, integ_min, integ_max);
+        _pg_tracking_residual = target-thr_ff_pd-pr_damp-_integTHR_state;
+        _pg_tracking = false;
+    }
+    _throttle_dem = thr_ff_pd + _integTHR_state + pr_damp + _pg_tracking_residual;
+    _pg_tracking_residual *= 0.5f / (0.5f + _DT);
 
     constrain_throttle();
 
     _log_TECS_state(now);
 
 
+}
+
+void AP_TECS::track_paraglider_throttle(float throttle)
+{
+    if (_pg_params.enable && isfinite(throttle)) {
+        _pg_tracking = true;
+        _pg_tracking_throttle = constrain_float(throttle, 0, 1);
+        _throttle_dem = _pg_tracking_throttle;
+    }
 }
 
 #endif // AP_TECS_PARAGLIDER_ENABLED

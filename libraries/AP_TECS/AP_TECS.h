@@ -158,6 +158,13 @@ public:
         _need_reset = true;
     }
 
+#if AP_TECS_PARAGLIDER_ENABLED
+    // Track the final applied throttle while a coordinated controller owns it.
+    // Estimation/reference filters continue running; re-entry releases the
+    // residual smoothly while keeping the conventional integrator bounded.
+    void track_paraglider_throttle(float throttle);
+#endif
+
     // Apply an altitude offset, to compensate for changes in home alt.
     void offset_altitude(const float alt_offset);
 
@@ -168,6 +175,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+#if AP_TECS_PARAGLIDER_ENABLED
+    bool _pg_tracking;
+    float _pg_tracking_throttle;
+    float _pg_tracking_residual;
+#endif
     // Last time update_50Hz was called
     uint64_t _update_50hz_last_usec;
 
