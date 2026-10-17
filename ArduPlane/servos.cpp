@@ -203,6 +203,18 @@ void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::
 */
 void Plane::paraglider_brake_mixer(void)
 {
+#if AP_PLANE_CUSTOMCONTROL_ENABLED && AP_TECS_PARAGLIDER_ENABLED
+    if (custom_control.mimo_running()) {
+        const auto &applied = custom_control.mimo_allocation().applied;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_pg_brake_left,
+            100 * (applied.common_brake + MAX(-applied.differential_brake, 0)));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_pg_brake_right,
+            100 * (applied.common_brake + MAX(applied.differential_brake, 0)));
+        pg_common_brake_pct = 100 * applied.common_brake;
+        pg_custom_common_pct = pg_common_brake_pct;
+        return;
+    }
+#endif
     float common_brake_pct = 0;
 
     if (control_mode == &mode_manual && channel_pitch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
@@ -1146,6 +1158,24 @@ void Plane::servos_output(void)
     }
 
     SRV_Channels::calc_pwm();
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED && AP_TECS_PARAGLIDER_ENABLED
+    // Feed back commands after vehicle mixing/suppression, not the pre-limit request.
+    auto allocation = custom_control.mimo_allocation();
+    allocation.time_ms = AP_HAL::millis();
+    const float left = SRV_Channels::get_output_scaled(SRV_Channel::k_pg_brake_left)*0.01f;
+    const float right = SRV_Channels::get_output_scaled(SRV_Channel::k_pg_brake_right)*0.01f;
+    allocation.applied = {right-left, MIN(left, right),
+                         SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f};
+    if (custom_control.mimo_running()) {
+        if (fabsf(allocation.applied.throttle-allocation.requested.throttle) > 0.001f) {
+            allocation.limits |= AP_CustomControl_MIMO::VEHICLE_OVERRIDE;
+        }
+        g2.pg_turn.reset(allocation.applied.differential_brake*4500);
+        TECS_controller.track_paraglider_throttle(allocation.applied.throttle);
+    }
+    custom_control.report_mimo_allocation(allocation);
+#endif
 
     SRV_Channels::output_ch_all();
 

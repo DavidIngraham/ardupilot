@@ -610,6 +610,10 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
 
 void Plane::update_alt()
 {
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    custom_control.mimo_input.reference.valid = false;
+    gcs().send_named_float("MIMO", custom_control.mimo_running() ? 1.0f : 0.0f);
+#endif
     barometer.update();
 
     // calculate the sink rate.
@@ -672,6 +676,15 @@ void Plane::update_alt()
             tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+        // Both controllers consume the same navigation demand, before TECS shaping.
+        auto &reference = custom_control.mimo_input.reference;
+        reference.time_ms = AP_HAL::millis();
+        reference.valid = true;
+        reference.vertical = AP_CustomControl_MIMO::VerticalReference::HEIGHT;
+        reference.height_home_m = tecs_target_alt_cm * 0.01f;
+        reference.equivalent_airspeed_mps = target_airspeed_cm * 0.01f;
+#endif
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
                                                  target_airspeed_cm,
                                                  flight_stage,
@@ -1107,6 +1120,28 @@ void Plane::update_quicktune(void)
 #if AP_PLANE_CUSTOMCONTROL_ENABLED
 void Plane::run_custom_controller()
 {
+    auto &input = custom_control.mimo_input;
+    input.time_ms = AP_HAL::millis();
+    input.dt = scheduler.get_loop_period_s();
+    input.flight_mode = get_mode();
+    input.flight_stage = uint8_t(flight_stage);
+    auto &state = input.state;
+    state.time_ms = input.time_ms;
+    state.attitude_valid = ahrs.get_quaternion(state.attitude_body_to_ned);
+    state.navigation_valid = ahrs.get_velocity_NED(state.velocity_ned_mps);
+    state.wind_valid = ahrs.get_wind(state.wind_ned_mps);
+    state.airspeed_valid = ahrs.airspeed_TAS(state.true_airspeed_mps);
+    state.eas_to_tas = ahrs.get_EAS2TAS();
+    state.body_rate_rads = ahrs.get_gyro();
+    ahrs.get_relative_position_D_home(state.height_home_m);
+    state.height_home_m = -state.height_home_m;
+    state.battery_voltage = battery.voltage();
+    state.reset_sequence = uint32_t(ahrs.get_last_attitude_reset_count()) << 16 |
+        ahrs.get_position_D_reset_count();
+    input.authority = {1, 1, MAX(aparm.throttle_min.get()*0.01f, 0),
+                       constrain_float(aparm.throttle_max.get()*0.01f, 0, 1),
+                       3.0f, aparm.throttle_slewrate > 0 ? aparm.throttle_slewrate*0.01f : 100.0f};
+    input.eligible = false;
     // Provide necessary information.
     custom_control.roll_target_deg = nav_roll_cd * 0.01f;
     custom_control.pitch_target_deg = nav_pitch_cd * 0.01f;
@@ -1122,10 +1157,22 @@ void Plane::run_custom_controller()
     custom_control.heading_rate_valid = pg_heading_rate_valid;
     custom_control.heading_rate_target_dps = pg_heading_rate_target_dps;
     custom_control.brake_common_pct = pg_common_brake_pct;
+    input.reference.heading_rate_rads = radians(pg_heading_rate_target_dps);
+    input.eligible = pg_heading_rate_valid && control_mode->does_auto_throttle() &&
+        ahrs.healthy() &&
+        flight_stage == AP_FixedWing::FlightStage::NORMAL &&
+        arming.is_armed_and_safety_off() && !throttle_suppressed &&
+        !failsafe.rc_failsafe && failsafe.throttle_counter == 0;
 #endif
 
     // Run the controller.
     if (custom_control.update()) {
+        if (custom_control.mimo_running()) {
+            // Brakes are written through the dedicated allocator in servos_output.
+            // Throttle still passes through Plane's suppression and output limits.
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                custom_control.mimo_allocation().applied.throttle * 100);
+        }
         // Reset stock controllers as needed.
         if (custom_control.needs_reset_roll()) {
             rollController.reset_I();
