@@ -24,6 +24,15 @@ public:
     // This will be called upon engaging the custom controller, so it's a good place to also do output matching.
     virtual void reset() = 0;
 
+    // Coordinated backends own the entire actuator vector. Legacy backends
+    // retain their existing update/reset and independent-axis behavior.
+    virtual bool is_mimo() const { return false; }
+    virtual bool engage(const AP_CustomControl_MIMO::Input &input) { return false; }
+    virtual bool update_mimo(const AP_CustomControl_MIMO::Input &input,
+                             AP_CustomControl_MIMO::Demand &demand) { return false; }
+    virtual void allocation_feedback(const AP_CustomControl_MIMO::Allocation &allocation) {}
+    virtual void disengage(AP_CustomControl_MIMO::DisengageReason reason) {}
+
 #if AP_FILTER_ENABLED
     // set the PID notch sample rates
     virtual void set_notch_sample_rate(float sample_rate) {};

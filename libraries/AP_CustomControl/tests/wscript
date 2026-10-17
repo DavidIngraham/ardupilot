@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+# AP_FLAKE8_CLEAN
+"""Build coordinated-controller unit tests."""
+
+
+def build(bld):
+    """Register tests using the common autopilot library."""
+    bld.ap_find_tests(use='ap')

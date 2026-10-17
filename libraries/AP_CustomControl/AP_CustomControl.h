@@ -4,6 +4,7 @@
 /// @brief   ArduPlane custom control library
 
 #include "AP_CustomControl_config.h"
+#include "AP_CustomControl_MIMO.h"
 
 #if AP_PLANE_CUSTOMCONTROL_ENABLED
 
@@ -16,7 +17,7 @@
 #include <Filter/AP_Filter.h>
 
 #ifndef AP_PLANE_CUSTOMCONTROL_MAX_TYPES
-#define AP_PLANE_CUSTOMCONTROL_MAX_TYPES 2
+#define AP_PLANE_CUSTOMCONTROL_MAX_TYPES 3
 #endif
 
 #ifndef AP_PLANE_CUSTOMCONTROL_FUNCTIONS_MAX
@@ -47,6 +48,10 @@ public:
     float brake_common_pct;
 
     bool is_running() const { return _is_running; }
+    AP_CustomControl_MIMO::Input mimo_input;
+    bool mimo_running() const { return _is_running && _mimo_valid; }
+    const AP_CustomControl_MIMO::Allocation &mimo_allocation() const { return _mimo_allocation; }
+    void report_mimo_allocation(const AP_CustomControl_MIMO::Allocation &allocation);
     // Request symmetric brake through the vehicle mixer, not raw servo overrides.
     void set_brake_common_pct(float value);
     bool get_brake_common_pct(float &value) const;
@@ -89,6 +94,7 @@ private:
         NONE            = 0,
         EMPTY           = 1,
         PID             = 2,
+        LQI             = 3,
     };            // controller that should be used
 
     struct FunctionInfo {
@@ -122,6 +128,8 @@ private:
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
     bool _common_brake_requested;
     float _common_brake_pct;
+    bool _mimo_valid;
+    AP_CustomControl_MIMO::Allocation _mimo_allocation;
  
     void set_controls();
     void clear_reset_flags(void);
