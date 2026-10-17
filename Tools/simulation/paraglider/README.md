@@ -13,7 +13,7 @@ dependency. Older commits preserve the original study snapshots.
 ## Custom controller integration
 
 The primary heading-rate controller lives in `libraries/APM_Control/PG_TurnController.*`.
-It remains the default; no LQI controller is installed. Plane supplies the custom
+It remains the default. Plane supplies the custom
 frontend with `heading_rate_valid` and the same unshaped `heading_rate_target_dps`
 used by the primary controller. Validity is cleared every stabilization loop and
 set only when the paraglider control path actually runs. Backends must still gate
@@ -32,7 +32,14 @@ While custom aileron output overrides primary control, Plane resets the primary
 heading controller with that output as its next starting demand. The first return
 sample matches within the current brake limits; any residual beyond the normal
 integrator bound decays with a 0.25 s time constant. Mode changes retain their
-ordinary full reset. TECS retains the framework's stock reset behavior; this is
-not a claim of bumpless throttle handover for a future integrated LQI backend.
+ordinary full reset. Legacy independent-axis backends retain the stock TECS reset
+behavior.
 
-These changes are AI-assisted. Controller gains and parameter indices are unchanged.
+The experimental `CP_TYPE=3` MIMO backend uses a separate atomic command contract
+and a dedicated left/right brake allocation path. It owns throttle and both brakes
+together, bypasses the legacy mixer, and adds TECS throttle tracking for re-entry.
+See [the coordinated interface](../../../libraries/AP_CustomControl/MIMO.md) for
+units, lifecycle, eligibility, regeneration and validation. The browser selector
+uses auxiliary function 109 to switch between PG+TECS and LQI in flight.
+
+These changes are AI-assisted. Baseline controller gains and existing parameter indices are unchanged.

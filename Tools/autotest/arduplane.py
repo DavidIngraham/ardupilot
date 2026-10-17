@@ -163,6 +163,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(30, 90, relative=True, minimum_duration=5, timeout=15)
         self.disarm_vehicle(force=True)
 
+    def ParagliderMIMO(self):
+        """Exercise atomic brake/throttle ownership and return to PG+TECS."""
+        self.paraglider_takeoff(extra_parameters={'CP_TYPE': 3, 'RC6_OPTION': 109})
+        self.set_rc(6, 1000)
+        self.change_mode('FBWB')
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.delay_sim_time(10, reason='settle baseline before MIMO engagement')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(6, 2000)
+        self.wait_statustext('Custom controller is ON', check_context=True)
+        self.wait_altitude(30, 90, relative=True, minimum_duration=20, timeout=30)
+        self.set_rc(6, 1000)
+        self.wait_statustext('Custom controller is OFF', check_context=True)
+        self.context_pop()
+        self.wait_altitude(30, 90, relative=True, minimum_duration=10, timeout=20)
+        self.disarm_vehicle(force=True)
+
     def ParagliderPitchJoint(self):
         """Fly the articulated model with the throttle pitch damper disabled"""
         self.paraglider_takeoff(120, model='paraglider-throw:paraglider-pitch-joint.json', pitch_damper=0)
@@ -10972,6 +10990,7 @@ return update()
             Test(self.ParagliderAutoMission, speedup=10),
             Test(self.ParagliderPitchJoint, speedup=10),
             Test(self.ParagliderCustomControl, speedup=10),
+            Test(self.ParagliderMIMO, speedup=10),
             Test(self.ParagliderLanding, speedup=10),
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
