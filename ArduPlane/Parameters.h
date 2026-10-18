@@ -556,6 +556,9 @@ public:
         // Apply throttle scale to throttle demand
         float apply_throttle(float throttle) const;
 
+        // Return final actuator throttle to the pre-compensation control units.
+        float unapply_throttle(float throttle) const;
+
         AP_Float batt_voltage_max;
         AP_Float batt_voltage_min;
         AP_Float batt_voltage_throttle_cutoff;

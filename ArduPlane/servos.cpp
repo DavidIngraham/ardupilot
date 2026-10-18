@@ -571,6 +571,11 @@ float ParametersG2::FWD_BATT_CMP::apply_throttle(float throttle) const
 
 }
 
+float ParametersG2::FWD_BATT_CMP::unapply_throttle(float throttle) const
+{
+    return enabled ? throttle / ratio : throttle;
+}
+
 /*
   calculate any throttle limits based on the watt limiter
  */
@@ -1165,8 +1170,15 @@ void Plane::servos_output(void)
     allocation.time_ms = AP_HAL::millis();
     const float left = SRV_Channels::get_output_scaled(SRV_Channel::k_pg_brake_left)*0.01f;
     const float right = SRV_Channels::get_output_scaled(SRV_Channel::k_pg_brake_right)*0.01f;
+    // The allocator request, observer and TECS tracking use pre-compensation
+    // units. Retain suppression/limiting, but do not feed voltage scaling back
+    // as a saturation error: it otherwise winds up the height integrator.
+    float throttle_feedback = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    if (control_mode->use_battery_compensation()) {
+        throttle_feedback = g2.fwd_batt_cmp.unapply_throttle(throttle_feedback);
+    }
     allocation.applied = {right-left, MIN(left, right),
-                         SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f};
+                         throttle_feedback*0.01f};
     if (custom_control.mimo_running()) {
         if (fabsf(allocation.applied.throttle-allocation.requested.throttle) > 0.001f) {
             allocation.limits |= AP_CustomControl_MIMO::VEHICLE_OVERRIDE;
