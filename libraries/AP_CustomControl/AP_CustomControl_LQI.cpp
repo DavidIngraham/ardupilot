@@ -2,6 +2,8 @@
 
 #if AP_PLANE_CUSTOMCONTROL_LQI_ENABLED
 #include "AP_CustomControl_LQI_gains.h"
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <GCS_MAVLink/GCS.h>
 using namespace AP_CustomControl_MIMO;
 using namespace MicroAGU_LQI;
 
@@ -92,6 +94,13 @@ const AP_Param::GroupInfo AP_CustomControl_LQI::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("OBSTRIM", 8, AP_CustomControl_LQI, _observer_trim, 0),
+    // @Param: FILE
+    // @DisplayName: Load LQI feedback gains from file
+    // @Description: Require compatible lqi-gains.bin loaded at boot. Upload to filesystem root and reboot. Invalid or missing files prevent LQI engagement when enabled. Gain source is latched at engagement.
+    // @Values: 0:Compiled gains,1:Require gain file
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("FILE", 9, AP_CustomControl_LQI, _use_file, 0),
     AP_GROUPEND
 };
 
@@ -99,6 +108,7 @@ AP_CustomControl_LQI::AP_CustomControl_LQI(AP_CustomControl &frontend, float dt)
     AP_CustomControl_Backend(frontend, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    load_gain_file();
 }
 
 bool AP_CustomControl_LQI::valid(const Input &in) const
@@ -126,7 +136,7 @@ bool AP_CustomControl_LQI::valid(const Input &in) const
 
 bool AP_CustomControl_LQI::can_run()
 {
-    return valid(_frontend.mimo_input);
+    return (_use_file == 0 || (_use_file == 1 && _file_valid)) && valid(_frontend.mimo_input);
 }
 
 void AP_CustomControl_LQI::measurements(const Input &in, float (&y)[9]) const
@@ -147,6 +157,10 @@ void AP_CustomControl_LQI::measurements(const Input &in, float (&y)[9]) const
 
 bool AP_CustomControl_LQI::engage(const Input &in)
 {
+    if (_use_file != 0 && (_use_file != 1 || !_file_valid)) {
+        return false;
+    }
+    _active_file = _use_file == 1;
     if (!valid(in) || !in.previous.applied.finite()) {
         return false;
     }
@@ -179,14 +193,14 @@ bool AP_CustomControl_LQI::engage(const Input &in)
     for (uint8_t j = 0; j < 3; j++) {
         float feedback = 0;
         for (uint8_t k = 0; k < 16; k++) {
-            feedback += K[j][k]*_state[k];
+            feedback += feedback_gain(j, k)*_state[k];
         }
         _matching[j] = _applied[j]-TRIM[j]+US[j]*feedback;
         if (_trim_map) {
             float x[16],u[3];
             turn_trim(0,in.reference.equivalent_airspeed_mps*in.state.eas_to_tas,x,u);
             feedback=0;
-            for (uint8_t k=0; k<16; k++) { feedback+=K[j][k]*(_state[k]-x[k]); }
+            for (uint8_t k=0; k<16; k++) { feedback+=feedback_gain(j, k)*(_state[k]-x[k]); }
             _matching[j]=_applied[j]-u[j]+US[j]*feedback;
         }
         _requested[j] = _applied[j];
@@ -265,14 +279,14 @@ bool AP_CustomControl_LQI::update_mimo(const Input &in, Demand &demand)
     for (uint8_t j = 0; j < 3; j++) {
         float correction = 0;
         for (uint8_t i = 0; i < 3; i++) {
-            correction += AW[j][i]*(_requested[i]-_applied[i]);
+            correction += antiwindup_gain(j, i)*(_requested[i]-_applied[i]);
         }
         if (_antiwindup_mode) {
             // Preserve turn integration when only common brake clips. Each
             // correction uses the dominant actuator and its actual integral gain.
             const uint8_t actuator[3]={0,2,1};
             const uint8_t i=actuator[j];
-            correction=(_requested[i]-_applied[i])/(US[i]*K[i][16+j]);
+            correction=(_requested[i]-_applied[i])/(US[i]*feedback_gain(i, 16+j));
         }
         _integral[j] = constrain_float(_integral[j]+DT*(errors[j]+correction), -50, 50);
     }
@@ -291,10 +305,10 @@ bool AP_CustomControl_LQI::update_mimo(const Input &in, Demand &demand)
     for (uint8_t i = 0; i < 3; i++) {
         float feedback = 0;
         for (uint8_t j = 0; j < 16; j++) {
-            feedback += K[i][j]*(_state[j]-target_state[j]);
+            feedback += feedback_gain(i, j)*(_state[j]-target_state[j]);
         }
         for (uint8_t j = 0; j < 3; j++) {
-            feedback += K[i][16+j]*_integral[j];
+            feedback += feedback_gain(i, 16+j)*_integral[j];
         }
         float feedforward = 0;
         for (uint8_t r = 0; r < 4; r++) {
@@ -319,5 +333,50 @@ void AP_CustomControl_LQI::allocation_feedback(const Allocation &allocation)
     _applied[0] = allocation.applied.throttle;
     _applied[1] = allocation.applied.common_brake;
     _applied[2] = allocation.applied.differential_brake;
+}
+// AI-assisted: filesystem abstraction serves both ChibiOS storage and WASM MEMFS.
+void AP_CustomControl_LQI::load_gain_file()
+{
+    uint32_t context = 0;
+    context = MicroAGU_LQI_File::crc32(A, sizeof(A), context);
+    context = MicroAGU_LQI_File::crc32(B, sizeof(B), context);
+    context = MicroAGU_LQI_File::crc32(L, sizeof(L), context);
+    context = MicroAGU_LQI_File::crc32(XS, sizeof(XS), context);
+    context = MicroAGU_LQI_File::crc32(US, sizeof(US), context);
+    context = MicroAGU_LQI_File::crc32(TRIM, sizeof(TRIM), context);
+    context = MicroAGU_LQI_File::crc32(XREF, sizeof(XREF), context);
+    context = MicroAGU_LQI_File::crc32(UREF, sizeof(UREF), context);
+    context = MicroAGU_LQI_File::crc32(EULER, sizeof(EULER), context);
+    context = MicroAGU_LQI_File::crc32(VELOCITY, sizeof(VELOCITY), context);
+    context = MicroAGU_LQI_File::crc32(RATES, sizeof(RATES), context);
+    const int fd = AP::FS().open("lqi-gains.bin", O_RDONLY);
+    if (fd < 0) {
+        return;
+    }
+    uint8_t data[MicroAGU_LQI_File::SIZE];
+    size_t total = 0;
+    while (total < sizeof(data)) {
+        const int32_t n = AP::FS().read(fd, data+total, sizeof(data)-total);
+        if (n <= 0) {
+            break;
+        }
+        total += n;
+    }
+    uint8_t extra;
+    const int32_t tail = AP::FS().read(fd, &extra, 1);
+    AP::FS().close(fd);
+    _file_valid = tail == 0 && MicroAGU_LQI_File::decode(data, total, context, US, _file_gains);
+    GCS_SEND_TEXT(_file_valid ? MAV_SEVERITY_INFO : MAV_SEVERITY_ERROR,
+                  "LQI gain file %s", _file_valid ? "loaded" : "rejected");
+}
+
+float AP_CustomControl_LQI::feedback_gain(uint8_t row, uint8_t col) const
+{
+    return _active_file ? _file_gains.k[row][col] : K[row][col];
+}
+
+float AP_CustomControl_LQI::antiwindup_gain(uint8_t row, uint8_t col) const
+{
+    return _active_file ? _file_gains.aw[row][col] : AW[row][col];
 }
 #endif

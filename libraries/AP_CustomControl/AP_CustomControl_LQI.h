@@ -2,6 +2,7 @@
 #include "AP_CustomControl_Backend.h"
 
 #if AP_PLANE_CUSTOMCONTROL_LQI_ENABLED
+#include "AP_CustomControl_LQI_File.h"
 class AP_CustomControl_LQI : public AP_CustomControl_Backend {
 public:
     AP_CustomControl_LQI(AP_CustomControl &frontend, float dt);
@@ -16,6 +17,13 @@ public:
     void allocation_feedback(const AP_CustomControl_MIMO::Allocation &allocation) override;
 
 private:
+    AP_Int8 _use_file;
+    bool _file_valid;
+    bool _active_file;
+    MicroAGU_LQI_File::Gains _file_gains;
+    void load_gain_file();
+    float feedback_gain(uint8_t row, uint8_t col) const;
+    float antiwindup_gain(uint8_t row, uint8_t col) const;
     AP_Float _height_up;
     AP_Float _height_down;
     AP_Float _height_tc;
