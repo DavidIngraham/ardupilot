@@ -38,6 +38,12 @@ const AP_Param::GroupInfo AP_CustomControl::var_info[] = {
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AP_CustomControl, _backend_var_info[1]),
 #endif // AP_PLANE_CUSTOMCONTROL_PID_ENABLED
 
+#if AP_PLANE_CUSTOMCONTROL_LQI_ENABLED
+    // @Group: 3_
+    // @Path: ./AP_CustomControl_LQI.cpp
+    AP_SUBGROUPVARPTR(_backend, "3_", 8, AP_CustomControl, _backend_var_info[2]),
+#endif
+
     AP_GROUPEND
 };
 
@@ -71,6 +77,7 @@ void AP_CustomControl::init(void)
     case CustomControlType::LQI:
 #if AP_PLANE_CUSTOMCONTROL_LQI_ENABLED
         _backend = NEW_NOTHROW AP_CustomControl_LQI(*this, _dt);
+        _backend_var_info[get_type()] = AP_CustomControl_LQI::var_info;
 #endif
         break;
     default:
