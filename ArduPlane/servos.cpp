@@ -203,6 +203,13 @@ void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::
 */
 void Plane::paraglider_brake_mixer(void)
 {
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (control_mode != &mode_auto || flight_stage != AP_FixedWing::FlightStage::LAND ||
+        !landing.is_flaring() || !arming.is_armed_and_safety_off()) {
+        pg_flare_pct = 0;
+        pg_flare_started_ms = 0;
+    }
+#endif
 #if AP_PLANE_CUSTOMCONTROL_ENABLED && AP_TECS_PARAGLIDER_ENABLED
     if (custom_control.mimo_running()) {
         const auto &applied = custom_control.mimo_allocation().applied;
@@ -245,15 +252,38 @@ void Plane::paraglider_brake_mixer(void)
         SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&
         SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_right);
     if (automatic_flare) {
-        const float target = MIN(constrain_float(g2.pg_flare_pct, 0, 100),
-                                 100 - constrain_float(g2.pg_flare_reserve, 0, 100));
-        pg_flare_pct = MIN(target, pg_flare_pct +
-            constrain_float(g2.pg_flare_rate, 1, 100) * scheduler.get_loop_period_s());
-        common_brake_pct = MIN(MAX(common_brake_pct, pg_flare_pct),
-                               100 - constrain_float(g2.pg_flare_reserve, 0, 100));
+        float height;
+        bool unused_rangefinder;
+        if (!ahrs.get_hagl(height)) {
+            // Keep the standard AP_Landing height fallback; never assume zero
+            // height or command an airborne mode switch on sensor loss.
+            height = get_landing_height(unused_rangefinder);
+        }
+        if (pg_flare_started_ms == 0 &&
+            (g2.pg_flare_height <= 0 || height <= g2.pg_flare_height)) {
+            pg_flare_started_ms = AP_HAL::millis();
+        }
+        float target = 0;
+        if (pg_flare_started_ms != 0) {
+            target = constrain_float(g2.pg_flare_pct, 0, 100);
+            Vector3f velocity;
+            if (g2.pg_flare_gain > 0 && ahrs.get_velocity_NED(velocity)) {
+                const float age = (AP_HAL::millis() - pg_flare_started_ms) * 0.001f;
+                const float sink_target = MAX(constrain_float(g2.pg_flare_sink, 0.2f, 3.0f), 1.38f - age);
+                const float damping = ahrs.get_pitch_rad() > 0.35f ?
+                    12.0f * MAX(0.0f, ahrs.get_gyro().y) : 0;
+                target += constrain_float(g2.pg_flare_gain * (velocity.z - sink_target) - damping, -15, 15);
+            }
+        }
+        const float limit = 100 - constrain_float(g2.pg_flare_reserve, 0, 100);
+        target = constrain_float(target, 0, limit);
+        const float step = constrain_float(g2.pg_flare_rate, 1, 400) * scheduler.get_loop_period_s();
+        pg_flare_pct += constrain_float(target - pg_flare_pct, -step, step);
+        common_brake_pct = MIN(MAX(common_brake_pct, pg_flare_pct), limit);
     } else {
         // Do not retain a flare command into a go-around or manual takeover.
         pg_flare_pct = 0;
+        pg_flare_started_ms = 0;
     }
     pg_common_brake_pct = common_brake_pct;
 #endif

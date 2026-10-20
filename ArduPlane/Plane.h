@@ -1206,6 +1206,7 @@ private:
     void paraglider_brake_mixer(void);
 #if AP_TECS_PARAGLIDER_ENABLED
     float pg_flare_pct = 0;
+    uint32_t pg_flare_started_ms = 0;
     float pg_common_brake_pct = 0;
     float pg_custom_common_pct = 0;
     float pg_heading_rate_target_dps = 0;

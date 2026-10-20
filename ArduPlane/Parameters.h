@@ -488,6 +488,9 @@ public:
     AP_Float pg_flare_pct;
     AP_Float pg_flare_rate;
     AP_Float pg_flare_reserve;
+    AP_Float pg_flare_height;
+    AP_Float pg_flare_sink;
+    AP_Float pg_flare_gain;
 #endif
 
     // just to make compilation easier when all things are compiled out...

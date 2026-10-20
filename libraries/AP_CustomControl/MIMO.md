@@ -53,9 +53,9 @@ not a flight-identified sensor covariance. It is enabled by default only in SITL
 (including WASM), and is not a flight-qualified tune. No superiority claim follows
 from local eigenvalue or smoke checks.
 
-Eligibility requires armed normal flight, automatic throttle, valid heading
+Eligibility requires armed normal flight or native AUTO landing approach, automatic throttle, valid heading
 guidance, valid attitude/navigation/wind/airspeed estimates, and no RC failsafe or
-throttle suppression. Launch, landing, MANUAL and FBWA retain baseline control.
+throttle suppression. Launch, landing final/flare, MANUAL and FBWA retain baseline control.
 Stale inputs, estimator resets, scheduling stalls or invalid output cause return
 to baseline; valid conditions allow re-engagement with output matching. The
 `MIMO` named telemetry value reports actual ownership separately from selection.
@@ -78,3 +78,28 @@ Native validation uses `tests/test_mimo` plus Plane's `ParagliderMIMO`,
 Rust physics, ownership and mode changes. `control-comparison.ts` runs a paired
 AUTO weather scenario and records metrics and samples; it is a diagnostic
 comparison, not statistical flight evidence.
+
+## Native paraglider AUTO landing
+
+AUTO `MAV_CMD_NAV_LAND` retains LQI on approach using the ordinary navigation
+height/heading references. `AP_Landing::is_flaring()` ends LQI ownership; the
+normal landing throttle suppression and paraglider turn/brake mixer then own
+final. A go-around, mode exit, disarm or disabled flare resets brake-flare state.
+No external RC guidance or MANUAL handoff is required.
+
+`PG_FLARE_HGT>0` with `PG_FLARE_PCT>0` and both brake outputs opts into EKF
+terrain height for the landing trigger, with normal landing-height fallback.
+Within native final, brake application latches at `PG_FLARE_HGT`; zero retains
+the original immediate brake application. `PG_FLARE_RATE` bounds application
+and release, and `PG_FLARE_RES` preserves differential travel. Optional
+`PG_FLARE_GAIN` adds sink feedback bounded to ±15 percentage points. The sink
+reference ramps from 1.38 m/s toward `PG_FLARE_SINK` at 1 m/s²; nose-up rate
+above 0.35 rad pitch reduces the correction. These experimental constants
+come from the microAGU flare study, not a generic airframe characterization.
+Feedback is disabled by default and skips unavailable fused velocity.
+
+`PG_LAND` telemetry encodes inactive=0, approach=1, power-off final=2 and
+brake flare=3. It is informational, not an external control interface.
+Real EKF + Rust 9-DOF WASM tests and evidence live in micro-agu's
+`research/active/native-landing-2026-10-20`; the native rigid-model landing
+autotest still exercises default flare behavior without enabling this feedback.

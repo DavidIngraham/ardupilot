@@ -613,10 +613,17 @@ void Plane::update_alt()
 #if AP_PLANE_CUSTOMCONTROL_ENABLED
     custom_control.mimo_input.reference.valid = false;
     gcs().send_named_float("MIMO", custom_control.mimo_running() ? 1.0f : 0.0f);
-    // Current EKF height above ground for external landing guidance.
+    // Current EKF height above ground for telemetry; landing consumes AHRS directly.
     // A negative value explicitly invalidates an unavailable terrain estimate.
     float hagl;
     gcs().send_named_float("EKF_HAGL", ahrs.get_hagl(hagl) ? hagl : -1.0f);
+#endif
+#if AP_TECS_PARAGLIDER_ENABLED
+    // Native landing phase for GCS presentation only; never an external command.
+    const bool pg_land = control_mode == &mode_auto &&
+        flight_stage == AP_FixedWing::FlightStage::LAND;
+    gcs().send_named_float("PG_LAND", !pg_land ? 0 :
+        (pg_flare_started_ms != 0 ? 3 : (landing.is_flaring() ? 2 : 1)));
 #endif
     barometer.update();
 
@@ -1164,7 +1171,9 @@ void Plane::run_custom_controller()
     input.reference.heading_rate_rads = radians(pg_heading_rate_target_dps);
     input.eligible = pg_heading_rate_valid && control_mode->does_auto_throttle() &&
         ahrs.healthy() &&
-        flight_stage == AP_FixedWing::FlightStage::NORMAL &&
+        (flight_stage == AP_FixedWing::FlightStage::NORMAL ||
+         (control_mode == &mode_auto && flight_stage == AP_FixedWing::FlightStage::LAND &&
+          !landing.is_flaring() && !landing.is_commanded_go_around())) &&
         arming.is_armed_and_safety_off() && !throttle_suppressed &&
         !failsafe.rc_failsafe && failsafe.throttle_counter == 0;
 #endif

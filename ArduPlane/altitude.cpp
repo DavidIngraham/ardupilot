@@ -955,6 +955,16 @@ bool Plane::get_external_HAGL(float &height_agl)
 float Plane::get_landing_height(bool &rangefinder_active)
 {
     float height;
+#if AP_TECS_PARAGLIDER_ENABLED
+    if (g2.pg_flare_height > 0 && g2.pg_flare_pct > 0 &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_right) &&
+        ahrs.get_hagl(height)) {
+        auto_state.terrain_correction = 0;
+        rangefinder_active = true;
+        return height;
+    }
+#endif
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
     // if external HAGL is active use that

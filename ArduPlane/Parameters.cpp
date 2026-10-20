@@ -1314,7 +1314,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: PG_FLARE_RATE
     // @DisplayName: Paraglider flare brake application rate
     // @Description: Maximum increase of symmetric brake demand per second after AP_Landing enters flare. Brake demand resets immediately on abort, mode exit or disarm.
-    // @Range: 1 100
+    // @Range: 1 400
     // @Units: %/s
     // @User: Advanced
     AP_GROUPINFO("PG_FLARE_RATE", 44, ParametersG2, pg_flare_rate, 30),
@@ -1326,6 +1326,29 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: %
     // @User: Advanced
     AP_GROUPINFO("PG_FLARE_RES", 45, ParametersG2, pg_flare_reserve, 20),
+
+    // @Param: PG_FLARE_HGT
+    // @DisplayName: Paraglider brake flare height
+    // @Description: When positive, use valid EKF terrain height to delay brake application until this height during the native AUTO final. LAND_FLARE_ALT still starts the power-off final. Zero retains immediate brake application at native flare. If EKF terrain is unavailable, use the normal landing height fallback. Experimental.
+    // @Range: 0 10
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_HGT", 46, ParametersG2, pg_flare_height, 0),
+
+    // @Param: PG_FLARE_SINK
+    // @DisplayName: Paraglider flare sink target
+    // @Description: Target downward velocity for bounded brake feedback during flare. Uses AHRS fused velocity. Does not change approach guidance or the native flare trigger.
+    // @Range: 0.2 3
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_SINK", 47, ParametersG2, pg_flare_sink, 0.65),
+
+    // @Param: PG_FLARE_GAIN
+    // @DisplayName: Paraglider flare sink feedback gain
+    // @Description: Common brake percentage correction per m/s sink error, bounded to plus or minus 15 percentage points and by steering reserve. Zero disables feedback. No integral term. Experimental.
+    // @Range: 0 50
+    // @User: Advanced
+    AP_GROUPINFO("PG_FLARE_GAIN", 48, ParametersG2, pg_flare_gain, 0),
 
 #endif
 
