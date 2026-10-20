@@ -613,6 +613,10 @@ void Plane::update_alt()
 #if AP_PLANE_CUSTOMCONTROL_ENABLED
     custom_control.mimo_input.reference.valid = false;
     gcs().send_named_float("MIMO", custom_control.mimo_running() ? 1.0f : 0.0f);
+    // Current EKF height above ground for external landing guidance.
+    // A negative value explicitly invalidates an unavailable terrain estimate.
+    float hagl;
+    gcs().send_named_float("EKF_HAGL", ahrs.get_hagl(hagl) ? hagl : -1.0f);
 #endif
     barometer.update();
 
