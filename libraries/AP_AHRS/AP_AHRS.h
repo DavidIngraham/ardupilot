@@ -145,6 +145,11 @@ public:
         return _wind_max;
     }
 
+    // Shared speed threshold; callers retain their ground/air velocity reference.
+    float get_min_speed() const {
+        return constrain_int16(_min_speed, 1, 20);
+    }
+
     /*
      * airspeed support
      */
@@ -786,6 +791,7 @@ private:
      * Parameters
      */
     AP_Int8 _wind_max;
+    AP_Int8 _min_speed;
     AP_Int8 _board_orientation;
     AP_Enum<EKFType> _ekf_type;
 

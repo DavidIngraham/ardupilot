@@ -209,6 +209,15 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
 
+    // @Param: MIN_SPEED
+    // @DisplayName: Minimum speed for course capture and sideslip fusion
+    // @Description: Minimum GPS ground speed for Plane takeoff, cruise and AUTOLAND course capture, and minimum forward air-relative speed for EKF2/EKF3 synthetic sideslip fusion. These checks use different velocity references but share this threshold. Lower values support slow aircraft but require reliable GPS course and a valid zero-sideslip assumption. Does not change wind-state initialization or other navigation speed limits.
+    // @Range: 1 20
+    // @Increment: 1
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("MIN_SPEED", 22, AP_AHRS, _min_speed, 5),
+
     AP_GROUPEND
 };
 
