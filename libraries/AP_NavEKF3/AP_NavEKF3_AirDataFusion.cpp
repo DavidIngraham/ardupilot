@@ -253,7 +253,7 @@ void NavEKF3_core::FuseSideslip()
     vel_rel_wind = prevTnb * vel_rel_wind;
 
     // perform fusion of assumed sideslip  = 0
-    if (vel_rel_wind.x > 5.0f)
+    if (vel_rel_wind.x > 3.0f)
     {
         // Calculate observation jacobians
         SH_BETA[0] = (vn - vwn)*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + (ve - vwe)*(2*q0*q3 + 2*q1*q2);
