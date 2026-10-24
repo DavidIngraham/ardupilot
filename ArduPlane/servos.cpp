@@ -204,7 +204,7 @@ void Plane::channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::
 void Plane::paraglider_brake_mixer(void)
 {
 #if AP_TECS_PARAGLIDER_ENABLED
-    if (control_mode != &mode_auto || flight_stage != AP_FixedWing::FlightStage::LAND ||
+    if (!control_mode->is_landing() || flight_stage != AP_FixedWing::FlightStage::LAND ||
         !landing.is_flaring() || !arming.is_armed_and_safety_off()) {
         pg_flare_pct = 0;
         pg_flare_started_ms = 0;
@@ -246,7 +246,7 @@ void Plane::paraglider_brake_mixer(void)
         }
     }
     common_brake_pct = MAX(common_brake_pct, pg_custom_common_pct);
-    const bool automatic_flare = control_mode == &mode_auto &&
+    const bool automatic_flare = control_mode->is_landing() &&
         flight_stage == AP_FixedWing::FlightStage::LAND && landing.is_flaring() &&
         arming.is_armed_and_safety_off() && is_positive(g2.pg_flare_pct.get()) &&
         SRV_Channels::function_assigned(SRV_Channel::k_pg_brake_left) &&

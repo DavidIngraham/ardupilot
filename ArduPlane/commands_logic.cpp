@@ -585,7 +585,7 @@ bool Plane::verify_takeoff()
         // rotate, and also allows us to cope with arbitrary
         // compass errors for auto takeoff
         if (gps.status() >= AP_GPS_FixType::FIX_3D && 
-            gps.ground_speed() > GPS_GND_CRS_MIN_SPD &&
+            gps.ground_speed() > ahrs.get_min_speed() &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             float takeoff_course = wrap_PI(radians(gps.ground_course())) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);

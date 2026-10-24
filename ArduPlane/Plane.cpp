@@ -620,7 +620,7 @@ void Plane::update_alt()
 #endif
 #if AP_TECS_PARAGLIDER_ENABLED
     // Native landing phase for GCS presentation only; never an external command.
-    const bool pg_land = control_mode == &mode_auto &&
+    const bool pg_land = control_mode->is_landing() &&
         flight_stage == AP_FixedWing::FlightStage::LAND;
     gcs().send_named_float("PG_LAND", !pg_land ? 0 :
         (pg_flare_started_ms != 0 ? 3 : (landing.is_flaring() ? 2 : 1)));
@@ -1172,7 +1172,7 @@ void Plane::run_custom_controller()
     input.eligible = pg_heading_rate_valid && control_mode->does_auto_throttle() &&
         ahrs.healthy() &&
         (flight_stage == AP_FixedWing::FlightStage::NORMAL ||
-         (control_mode == &mode_auto && flight_stage == AP_FixedWing::FlightStage::LAND &&
+         (control_mode->is_landing() && flight_stage == AP_FixedWing::FlightStage::LAND &&
           !landing.is_flaring() && !landing.is_commanded_go_around())) &&
         arming.is_armed_and_safety_off() && !throttle_suppressed &&
         !failsafe.rc_failsafe && failsafe.throttle_counter == 0;

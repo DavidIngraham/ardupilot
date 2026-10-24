@@ -274,7 +274,7 @@ void ModeAutoLand::check_takeoff_direction()
     if (plane.control_mode->allows_autoland_direction_capture() &&
         plane.is_flying() &&
         hal.util->get_soft_armed() &&
-        plane.gps.ground_speed() > GPS_GND_CRS_MIN_SPD) {
+        plane.gps.ground_speed() > plane.ahrs.get_min_speed()) {
         set_autoland_direction(plane.gps.ground_course() + landing_dir_off);
     }
 }
