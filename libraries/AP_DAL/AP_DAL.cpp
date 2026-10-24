@@ -83,6 +83,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 #endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
     _RFRN.ekf_type = int8_t(ahrs.configured_ekf_type());
+    _RFRN.min_speed = ahrs.get_min_speed();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion

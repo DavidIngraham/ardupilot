@@ -190,6 +190,11 @@ public:
         return _RFRN.fly_forward;
     }
 
+    float get_min_speed(void) const {
+        // Older replay logs do not contain this appended field.
+        return _RFRN.min_speed == 0 ? 5 : constrain_int16(_RFRN.min_speed, 1, 20);
+    }
+
     bool get_takeoff_expected(void) const {
         return _RFRN.takeoff_expected;
     }
